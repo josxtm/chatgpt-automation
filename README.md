@@ -7,9 +7,9 @@ Supervisor **multiproyecto** basado exclusivamente en **GitHub Actions**.
 - `Supervisor CI` valida los cambios del proyecto.
 - `Multiproject Supervisor` se programa cada cinco minutos mediante GitHub Actions (la ejecución puede retrasarse).
 - `scripts/supervise.mjs` inspecciona PR abiertos y check runs de los repositorios habilitados; recorre páginas hasta 1.000 resultados y **falla sin declarar verde** si se alcanza el límite.
-- `supervisor.config.json` contiene una lista explícita de repositorios y checks obligatorios. **Inicialmente está vacía:** ningún repositorio es supervisado hasta que se configure.
-- Se requiere el secreto `SUPERVISOR_GITHUB_TOKEN` con permisos mínimos de lectura para acceder a los repositorios elegidos. Sin él, el script termina indicando que está inactivo.
-- La supervisión es **solo lectura**: no ejecuta agentes, no corrige código ni fusiona PR.
+- `supervisor.config.json` contiene una lista explícita de repositorios y checks obligatorios. **Inicialmente supervisa únicamente `josxtm/chatgpt-automation`, usando el token integrado de GitHub.
+- El token integrado de GitHub permite supervisar este repositorio. Para otros repositorios, configurar `SUPERVISOR_GITHUB_TOKEN` con permisos mínimos de lectura sobre los repositorios seleccionados.
+- La supervisión es **solo lectura**: no ejecuta agentes, no corrige código ni fusiona PR. El workflow programado se ejecuta desde la rama predeterminada después de integrar el PR.
 
 Ejemplo de configuración:
 
