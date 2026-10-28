@@ -1,44 +1,44 @@
 # ChatGPT Automation
 
-Supervisor **multiproyecto** independiente para repositorios GitHub.
+Supervisor **multiproyecto** basado exclusivamente en **GitHub Actions**.
 
-## Estado
-v0.2 (propuesta en PR): supervisor **solo lectura**, no desplegado. No ejecuta agentes, no modifica otros repositorios y no fusiona PR.
+## v0.4 — Migración a GitHub Actions (propuesta)
 
-## Arquitectura
-Cloudflare Worker (cron cada 3 minutos) + GitHub API + Cloudflare D1.
-- Consulta PR abiertos de repositorios habilitados.
-- Consulta check runs del SHA actual de cada PR.
-- Registra estados green, red, pending, unknown y draft.
-- Cada repositorio tiene sus propios nombres de comprobaciones obligatorias.
-- Usa una lease en D1 para reducir solapamientos y evita duplicar observaciones.
-- Si falta una política válida o un check requerido, el estado es **unknown**, nunca green.
+- `Supervisor CI` valida los cambios del proyecto.
+- `Multiproject Supervisor` se programa cada cinco minutos mediante GitHub Actions (la ejecución puede retrasarse).
+- `scripts/supervise.mjs` inspecciona PR abiertos y check runs de los repositorios habilitados; recorre páginas hasta 1.000 resultados y **falla sin declarar verde** si se alcanza el límite.
+- `supervisor.config.json` contiene una lista explícita de repositorios y checks obligatorios. **Inicialmente supervisa únicamente `josxtm/chatgpt-automation`, usando el token integrado de GitHub.
+- El token integrado de GitHub permite supervisar este repositorio. Para otros repositorios, configurar `SUPERVISOR_GITHUB_TOKEN` con permisos mínimos de lectura sobre los repositorios seleccionados.
+- La supervisión es **solo lectura**: no ejecuta agentes, no corrige código ni fusiona PR. El workflow programado se ejecuta desde la rama predeterminada después de integrar el PR.
 
-## Instalación (pendiente de autorización Cloudflare)
-1. Crear base D1 `automation_db` y configurar su ID en `wrangler.toml`.
-2. Aplicar, en orden, `migrations/0001_init.sql` y `migrations/0002_repository_check_policies.sql` con Wrangler D1. Si la tabla ya existe, aplicar solo la migración pendiente.
-3. Configurar `GITHUB_TOKEN` como secreto del Worker, con acceso **solo lectura** a los repositorios elegidos (Pull requests y Checks).
-4. Registrar explícitamente los repositorios y sus checks reales. Ejemplo SQL (sustituir nombres por los de cada proyecto):
+Ejemplo de configuración:
 
-   ```sql
-   INSERT INTO repositories(full_name,enabled,required_checks)
-   VALUES ('owner/project-one',1,'["verify"]'),
-          ('owner/project-two',1,'["lint","unit-tests"]');
-   ```
+```json
+{
+  "repositories": [
+    {
+      "full_name": "owner/example",
+      "enabled": true,
+      "required_checks": ["test"]
+    }
+  ]
+}
+```
 
-5. Ejecutar `npm test`; desplegar con `npx wrangler deploy`.
-6. Solo después de probarlo, cambiar `AUTOMATION_ENABLED` de `false` a `true` y redesplegar.
+Los nombres de `required_checks` deben coincidir exactamente con los nombres de los checks de GitHub.
 
-**Política por repositorio:** `required_checks` es un array JSON de nombres exactos de check runs, no una cadena separada por comas. Un valor vacío, inválido o con nombres duplicados se considera no configurado y **nunca da verde**. Los proyectos existentes migran con `[]` y deben configurarse explícitamente.
+## Seguridad
 
-## Parada de emergencia
-Establecer `AUTOMATION_ENABLED = "false"` y redesplegar o desactivar el cron en Cloudflare.
+- No incluir tokens ni secretos en el repositorio.
+- Un check ausente, ambiguo o duplicado **nunca** se considera verde.
+- El cron de GitHub no garantiza ejecución exacta cada cinco minutos.
+- No se realizan fusiones automáticas.
+- Antes de permitir acciones de escritura: verificar protección de ramas, identidad de commits, permisos y límites de reintentos.
 
-## Limitaciones pendientes
-- Paginación de check runs, status contexts, branch protection y validación de SHA de merge.
-- Panel autenticado, observabilidad y renovación de leases.
-- Integración de agentes con permisos mínimos y máximo de tres reintentos.
-- Política de fusiones: ninguna fusión sin verificaciones y aprobación explícita.
-- El cron puede sufrir retrasos; tres minutos es una frecuencia solicitada, no una garantía de ejecución exacta.
+## Migración
 
-**Nunca introducir secretos en este repositorio público.**
+La implementación antigua de Cloudflare Worker y D1 permanece en el historial y en archivos heredados, pero **no forma parte de la arquitectura activa**. Su retirada del repositorio se realizará en una fase posterior, después de validar este nuevo workflow.
+
+## Pruebas
+
+Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en GitHub.
