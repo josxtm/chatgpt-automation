@@ -1,10 +1,17 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, appendFileSync } from 'node:fs';
+
+const started = new Date().toISOString();
+const summary = ['# Multiproject Supervisor', '', '- Inicio (UTC): ' + started, '- Disparador: ' + (process.env.GITHUB_EVENT_NAME || 'local'), '- Rama: ' + (process.env.GITHUB_REF_NAME || 'local'), ''];
+function report(line) { summary.push(line); console.log(line); }
+function publish() { if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\n') + '\n'); }
+process.on('exit', publish);
 import { validateRepositories, inspectRepository } from '../src/supervisor-core.js';
+import { prSummaryRows } from '../src/summary.js';
 
 const config = JSON.parse(readFileSync(new URL('../supervisor.config.json', import.meta.url)));
 const repositories = validateRepositories(config).filter(entry => entry.enabled);
 if (!repositories.length) {
-  console.log('No enabled repositories; supervisor has nothing to inspect.');
+  report('No hay repositorios habilitados.');
   process.exit(0);
 }
 if (!process.env.GH_TOKEN) throw new Error('GH_TOKEN missing: configure SUPERVISOR_GITHUB_TOKEN for other/private repositories');
@@ -19,14 +26,37 @@ async function get(path) {
   return res.json();
 }
 let errors = 0;
+let totalPrs = 0;
+const prDetails = [];
+report('**Fuente:** API de GitHub. Un flujo programado puede ejecutarse con retraso.');
+report('');
+report('| Repositorio | PR abiertos | Verdes | Rojos | Pendientes | Desconocidos | Borradores |');
+report('|---|---:|---:|---:|---:|---:|---:|');
 for (const entry of repositories) {
   try {
     const observations = await inspectRepository(entry,get);
     for (const item of observations) console.log(JSON.stringify(item));
-    console.log(JSON.stringify({repo:entry.full_name,open_prs:observations.length}));
+    prDetails.push(...prSummaryRows(observations));
+    totalPrs += observations.length;
+    const count = state => observations.filter(item => item.state === state).length;
+    report('| ' + entry.full_name + ' | ' + observations.length + ' | ' + count('green') + ' | ' + count('red') + ' | ' + count('pending') + ' | ' + count('unknown') + ' | ' + count('draft') + ' |');
   } catch (error) {
     errors++;
     console.error(JSON.stringify({repo:entry.full_name,error:String(error)}));
+    report('| ' + entry.full_name + ' | ERROR | — | — | — | — | — |');
   }
 }
+report('');
+report('**Total de PR examinados:** ' + totalPrs + '. **Repositorios con error:** ' + errors + '.');
+report('');
+report('## Detalle de PR');
+report('');
+if (!prDetails.length) report('Sin PR abiertos detectados en los repositorios consultados correctamente.');
+else {
+  report('| PR | Commit | Estado |');
+  report('|---|---|---|');
+  for (const row of prDetails) report(row);
+}
+report('');
+report('**Nota:** verde indica checks del PR, no ejecución automática del agente.');
 if (errors) process.exitCode = 1;
