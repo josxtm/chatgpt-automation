@@ -27,13 +27,27 @@ Ejemplo de configuración:
 
 Los nombres de `required_checks` deben coincidir exactamente con los nombres de los checks de GitHub.
 
-## v0.5 — Informes visibles (PR #6, pendiente de integrar)
+## v0.5 — Informes visibles (integrado en main)
 
 - Cada ejecución muestra un informe en **Actions → Multiproject Supervisor → ejecución → Summary**.
 - El informe incluye fecha UTC, disparador (`schedule` o `workflow_dispatch`), rama, repositorios revisados y enlaces directos a PR con su commit y estado.
 - Los PR borrador se clasifican como `draft`; no se consideran verdes. Un PR sin checks completos no se considera verde.
-- El workflow programado solo utiliza la versión de `main`. Mientras el PR #6 no se fusione, estas mejoras **no estarán disponibles** en el supervisor programado.
+- El workflow programado solo utiliza la versión de `main`. Los informes de v0.5 ya están integrados; para verlos hay que abrir una ejecución posterior a esa integración.
 - La ejecución manual verde y la ejecución periódica son comprobaciones distintas: para validar el cron deben aparecer ejecuciones cuyo disparador sea `schedule`.
+
+## v0.6 — Diagnóstico de programación (propuesta de PR)
+
+- El cron propuesto es `3-58/5 * * * *`: doce oportunidades por hora, cada cinco minutos, alejadas del minuto 0 (pico de carga habitual).
+- Se mantiene `workflow_dispatch` para pruebas manuales, el modo **solo lectura** y la política de no fusionar PR automáticamente.
+- `npm test` verifica que el cron conserva exactamente doce intervalos de cinco minutos, incluidos los límites entre horas.
+- **Importante:** GitHub Actions no garantiza el inicio puntual ni la ejecución de todos los cron. Desplazar los minutos es una medida de mitigación, **no una prueba de que la programación esté funcionando**.
+
+### Comprobar las ejecuciones periódicas
+
+1. Abrir **Actions → Multiproject Supervisor** y seleccionar una ejecución.
+2. En el resumen, comprobar el campo **Disparador**. `schedule` acredita un disparo programado; `workflow_dispatch` solo acredita una ejecución manual.
+3. Si no aparece ningún `schedule`, revisar que el workflow está habilitado, que reside en la rama predeterminada y que GitHub Actions está permitido. Revisar también la actividad y posibles retrasos de GitHub.
+4. Si sigue sin ejecutarse, investigar el planificador de GitHub y los permisos del repositorio; **no declarar resuelto el problema únicamente porque el CI sea verde**.
 
 ## Seguridad
 
