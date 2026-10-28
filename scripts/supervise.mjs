@@ -29,7 +29,7 @@ async function get(path) {
 // A manual green run does not prove that GitHub's cron is firing.
 report('## Diagnóstico de ejecuciones programadas');
 const ownRepo = process.env.GITHUB_REPOSITORY;
-if (!/^[\\w.-]+\\/[\\w.-]+$/.test(ownRepo || '')) {
+if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
   report('Estado: **desconocido** (GITHUB_REPOSITORY no disponible).');
 } else {
   try {
@@ -37,7 +37,7 @@ if (!/^[\\w.-]+\\/[\\w.-]+$/.test(ownRepo || '')) {
     const health = assessScheduleHistory(history);
     report('- Estado: **' + health.state + '**.');
     if (health.lastRunAt) {
-      report('- Último disparo \`schedule\`: ' + health.lastRunAt + ' (' + health.ageMinutes + ' minutos).');
+      report('- Último disparo `schedule`: ' + health.lastRunAt + ' (' + health.ageMinutes + ' minutos).');
       report('- [Abrir ejecución](https://github.com/' + ownRepo + '/actions/runs/' + health.runId + ').');
     } else if (health.reason) report('- Motivo: ' + health.reason + '.');
   } catch (error) {
