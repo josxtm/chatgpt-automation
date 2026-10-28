@@ -6,6 +6,7 @@ function report(line) { summary.push(line); console.log(line); }
 function publish() { if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\n') + '\n'); }
 process.on('exit', publish);
 import { validateRepositories, inspectRepository } from '../src/supervisor-core.js';
+import { prSummaryRows } from '../src/summary.js';
 
 const config = JSON.parse(readFileSync(new URL('../supervisor.config.json', import.meta.url)));
 const repositories = validateRepositories(config).filter(entry => entry.enabled);
@@ -26,12 +27,16 @@ async function get(path) {
 }
 let errors = 0;
 let totalPrs = 0;
+const prDetails = [];
+report('**Fuente:** API de GitHub. Un flujo programado puede ejecutarse con retraso.');
+report('');
 report('| Repositorio | PR abiertos | Verdes | Rojos | Pendientes | Desconocidos | Borradores |');
 report('|---|---:|---:|---:|---:|---:|---:|');
 for (const entry of repositories) {
   try {
     const observations = await inspectRepository(entry,get);
     for (const item of observations) console.log(JSON.stringify(item));
+    prDetails.push(...prSummaryRows(observations));
     totalPrs += observations.length;
     const count = state => observations.filter(item => item.state === state).length;
     report('| ' + entry.full_name + ' | ' + observations.length + ' | ' + count('green') + ' | ' + count('red') + ' | ' + count('pending') + ' | ' + count('unknown') + ' | ' + count('draft') + ' |');
@@ -43,5 +48,15 @@ for (const entry of repositories) {
 }
 report('');
 report('**Total de PR examinados:** ' + totalPrs + '. **Repositorios con error:** ' + errors + '.');
+report('');
+report('## Detalle de PR');
+report('');
+if (!prDetails.length) report('Sin PR abiertos detectados en los repositorios consultados correctamente.');
+else {
+  report('| PR | Commit | Estado |');
+  report('|---|---|---|');
+  for (const row of prDetails) report(row);
+}
+report('');
 report('**Nota:** verde indica checks del PR, no ejecución automática del agente.');
 if (errors) process.exitCode = 1;
