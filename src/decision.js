@@ -1,12 +1,20 @@
 export function decide({draft,checks,expected}) {
   if (draft) return 'draft';
-  if (!expected.length) return 'unknown';
+  if (!Array.isArray(expected) || expected.length === 0) return 'unknown';
+  if (!Array.isArray(checks)) return 'unknown';
+  if (new Set(expected).size !== expected.length) return 'unknown';
+  let pending = false;
   for (const name of expected) {
-    const matches = checks.filter(c => c.name === name);
+    const matches = checks.filter(c => c?.name === name);
     if (matches.length !== 1) return 'unknown';
     const c = matches[0];
-    if (c.status !== 'completed') return 'pending';
-    if (c.conclusion !== 'success') return 'red';
+    if (c.status !== 'completed') {
+      if (c.status !== 'queued' && c.status !== 'in_progress' && c.status !== 'pending' && c.status !== 'waiting' && c.status !== 'requested') return 'unknown';
+      pending = true;
+      continue;
+    }
+    if (c.conclusion === 'failure' || c.conclusion === 'timed_out' || c.conclusion === 'action_required' || c.conclusion === 'cancelled') return 'red';
+    if (c.conclusion !== 'success') return 'unknown';
   }
-  return 'green';
+  return pending ? 'pending' : 'green';
 }
