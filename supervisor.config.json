@@ -1,3 +1,9 @@
 {
-  "repositories": []
+  "repositories": [
+    {
+      "full_name": "josxtm/chatgpt-automation",
+      "enabled": true,
+      "required_checks": ["test"]
+    }
+  ]
 }
