@@ -1,0 +1,23 @@
+name: Multiproject Supervisor
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: multiproject-supervisor
+  cancel-in-progress: false
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Inspect configured repositories (read-only)
+        env:
+          GH_TOKEN: ${{ secrets.SUPERVISOR_GITHUB_TOKEN }}
+        run: node scripts/supervise.mjs
