@@ -1,14 +1,16 @@
 import { readFileSync } from 'node:fs';
-import { decide } from '../src/decision.js';
+import { validateRepositories, inspectRepository } from '../src/supervisor-core.js';
+
 const config = JSON.parse(readFileSync(new URL('../supervisor.config.json', import.meta.url)));
-if (!Array.isArray(config.repositories)) throw new Error('Invalid repository configuration');
-if (!process.env.GH_TOKEN) {
-  console.log('Supervisor inactive: SUPERVISOR_GITHUB_TOKEN is not configured.');
+const repositories = validateRepositories(config).filter(entry => entry.enabled);
+if (!repositories.length) {
+  console.log('No enabled repositories; supervisor has nothing to inspect.');
   process.exit(0);
 }
+if (!process.env.GH_TOKEN) throw new Error('GH_TOKEN missing: configure SUPERVISOR_GITHUB_TOKEN for other/private repositories');
 async function get(path) {
   const res = await fetch('https://api.github.com' + path, {headers:{
-    Authorization: 'Bearer ' + process.env.GH_TOKEN,
+    Authorization:'Bearer ' + process.env.GH_TOKEN,
     Accept:'application/vnd.github+json',
     'X-GitHub-Api-Version':'2022-11-28',
     'User-Agent':'chatgpt-automation'
@@ -16,28 +18,15 @@ async function get(path) {
   if (!res.ok) throw new Error('GitHub API ' + res.status + ' at ' + path);
   return res.json();
 }
-async function pages(path, key) {
-  const results = [];
-  for (let page=1; page<=10; page++) {
-    const sep=path.includes('?')?'&':'?';
-    const data=await get(path+sep+'per_page=100&page='+page);
-    const batch=key?data[key]:data;
-    if (!Array.isArray(batch)) throw new Error('Invalid API page');
-    results.push(...batch);
-    if (batch.length<100) return results;
-  }
-  throw new Error('Pagination limit reached: refusing incomplete decision');
-}
-for (const entry of config.repositories) {
-  if (!entry.enabled) continue;
-  const repo=entry.full_name;
-  if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) throw new Error('Invalid repository name');
-  const required=entry.required_checks;
-  const prs=await pages('/repos/'+repo+'/pulls?state=open');
-  for (const pr of prs) {
-    const sha=pr.head.sha;
-    const checks=await pages('/repos/'+repo+'/commits/'+sha+'/check-runs','check_runs');
-    const state=decide({draft:pr.draft,checks,expected:required});
-    console.log(JSON.stringify({repo,pr:pr.number,sha,state}));
+let errors = 0;
+for (const entry of repositories) {
+  try {
+    const observations = await inspectRepository(entry,get);
+    for (const item of observations) console.log(JSON.stringify(item));
+    console.log(JSON.stringify({repo:entry.full_name,open_prs:observations.length}));
+  } catch (error) {
+    errors++;
+    console.error(JSON.stringify({repo:entry.full_name,error:String(error)}));
   }
 }
+if (errors) process.exitCode = 1;
