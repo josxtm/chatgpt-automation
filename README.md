@@ -2,12 +2,12 @@
 
 Supervisor **multiproyecto** basado exclusivamente en **GitHub Actions**.
 
-## v0.4 — Migración a GitHub Actions (propuesta)
+## v0.4 — Migración a GitHub Actions
 
 - `Supervisor CI` valida los cambios del proyecto.
 - `Multiproject Supervisor` se programa cada cinco minutos mediante GitHub Actions (la ejecución puede retrasarse).
 - `scripts/supervise.mjs` inspecciona PR abiertos y check runs de los repositorios habilitados; recorre páginas hasta 1.000 resultados y **falla sin declarar verde** si se alcanza el límite.
-- `supervisor.config.json` contiene una lista explícita de repositorios y checks obligatorios. **Inicialmente supervisa únicamente `josxtm/chatgpt-automation`, usando el token integrado de GitHub.
+- `supervisor.config.json` contiene una lista explícita de repositorios y checks obligatorios. **Inicialmente supervisa únicamente `josxtm/chatgpt-automation`**, usando el token integrado de GitHub.
 - El token integrado de GitHub permite supervisar este repositorio. Para otros repositorios, configurar `SUPERVISOR_GITHUB_TOKEN` con permisos mínimos de lectura sobre los repositorios seleccionados.
 - La supervisión es **solo lectura**: no ejecuta agentes, no corrige código ni fusiona PR. El workflow programado se ejecuta desde la rama predeterminada después de integrar el PR.
 
@@ -26,6 +26,14 @@ Ejemplo de configuración:
 ```
 
 Los nombres de `required_checks` deben coincidir exactamente con los nombres de los checks de GitHub.
+
+## v0.5 — Informes visibles (PR #6, pendiente de integrar)
+
+- Cada ejecución muestra un informe en **Actions → Multiproject Supervisor → ejecución → Summary**.
+- El informe incluye fecha UTC, disparador (`schedule` o `workflow_dispatch`), rama, repositorios revisados y enlaces directos a PR con su commit y estado.
+- Los PR borrador se clasifican como `draft`; no se consideran verdes. Un PR sin checks completos no se considera verde.
+- El workflow programado solo utiliza la versión de `main`. Mientras el PR #6 no se fusione, estas mejoras **no estarán disponibles** en el supervisor programado.
+- La ejecución manual verde y la ejecución periódica son comprobaciones distintas: para validar el cron deben aparecer ejecuciones cuyo disparador sea `schedule`.
 
 ## Seguridad
 
