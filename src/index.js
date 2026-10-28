@@ -1,4 +1,5 @@
 import { decide } from './decision.js';
+import { parseRequiredChecks } from './policy.js';
 
 const API = 'https://api.github.com';
 async function github(path, token) {
@@ -14,8 +15,7 @@ async function github(path, token) {
   return response.json();
 }
 
-async function inspect(repo, env) {
-  const required = (env.REQUIRED_CHECKS || '').split(',').map(s => s.trim()).filter(Boolean);
+async function inspect(repo, required, env) {
   let page = 1;
   while (page <= 10) {
     const prs = await github('/repos/' + repo + '/pulls?state=open&per_page=100&page=' + page, env.GITHUB_TOKEN);
@@ -41,9 +41,9 @@ export default {
         .bind('cron',now+170).run();
       if (lock.meta.changes !== 1) return;
       try {
-        const repos = await env.DB.prepare('SELECT full_name FROM repositories WHERE enabled=1').all();
+        const repos = await env.DB.prepare('SELECT full_name, required_checks FROM repositories WHERE enabled=1').all();
         for (const row of repos.results) {
-          try { await inspect(row.full_name,env); }
+          try { await inspect(row.full_name,parseRequiredChecks(row.required_checks),env); }
           catch (error) {
             await env.DB.prepare('INSERT INTO audit(repo,event,details) VALUES(?,?,?)')
               .bind(row.full_name,'monitor_error',String(error)).run();
