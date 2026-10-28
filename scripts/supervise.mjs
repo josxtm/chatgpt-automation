@@ -7,6 +7,7 @@ function publish() { if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process
 process.on('exit', publish);
 import { validateRepositories, inspectRepository } from '../src/supervisor-core.js';
 import { prSummaryRows } from '../src/summary.js';
+import { assessScheduleHistory } from '../src/schedule-health.js';
 
 const config = JSON.parse(readFileSync(new URL('../supervisor.config.json', import.meta.url)));
 const repositories = validateRepositories(config).filter(entry => entry.enabled);
@@ -25,6 +26,28 @@ async function get(path) {
   if (!res.ok) throw new Error('GitHub API ' + res.status + ' at ' + path);
   return res.json();
 }
+// A manual green run does not prove that GitHub's cron is firing.
+report('## Diagnóstico de ejecuciones programadas');
+const ownRepo = process.env.GITHUB_REPOSITORY;
+if (!/^[\\w.-]+\\/[\\w.-]+$/.test(ownRepo || '')) {
+  report('Estado: **desconocido** (GITHUB_REPOSITORY no disponible).');
+} else {
+  try {
+    const history = await get('/repos/' + ownRepo + '/actions/workflows/supervisor.yml/runs?event=schedule&per_page=1');
+    const health = assessScheduleHistory(history);
+    report('- Estado: **' + health.state + '**.');
+    if (health.lastRunAt) {
+      report('- Último disparo \`schedule\`: ' + health.lastRunAt + ' (' + health.ageMinutes + ' minutos).');
+      report('- [Abrir ejecución](https://github.com/' + ownRepo + '/actions/runs/' + health.runId + ').');
+    } else if (health.reason) report('- Motivo: ' + health.reason + '.');
+  } catch (error) {
+    report('- Estado: **desconocido** (no se pudo consultar el historial de Actions).');
+    console.error('Schedule history unavailable:', String(error));
+  }
+}
+report('- Una ejecución reciente no garantiza una cadencia exacta de cinco minutos.');
+report('');
+
 let errors = 0;
 let totalPrs = 0;
 const prDetails = [];
