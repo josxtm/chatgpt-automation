@@ -9,7 +9,7 @@ test('rejects duplicate repositories and invalid required checks', () => {
   assert.throws(()=>validateRepositories({repositories:[{...good,required_checks:[]}]}),/Invalid required/);
 });
 test('retrieves all check pages before deciding green', async () => {
-  const get=async path=>path.includes('page=1')?{total_count:101,check_runs:Array.from({length:100},(_,i)=>({name:'other'+i}))}:{total_count:101,check_runs:[{name:'test',status:'completed',conclusion:'success'}]};
+  const get=async path=>/[?&]page=1(?:&|$)/.test(path)?{total_count:101,check_runs:Array.from({length:100},(_,i)=>({name:'other'+i}))}:{total_count:101,check_runs:[{name:'test',status:'completed',conclusion:'success'}]};
   assert.equal((await fetchPages(get,'/checks','check_runs')).length,101);
 });
 test('fails closed on truncated or malformed check results', async () => {
