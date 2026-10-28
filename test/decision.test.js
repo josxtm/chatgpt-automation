@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { decide } from '../src/decision.js';
+const expected=['verify'];
+const check=(status,conclusion)=>[{name:'verify',status,conclusion}];
+test('green only for completed success',()=>assert.equal(decide({draft:false,checks:check('completed','success'),expected}),'green'));
+test('red on failure',()=>assert.equal(decide({draft:false,checks:check('completed','failure'),expected}),'red'));
+test('pending waits',()=>assert.equal(decide({draft:false,checks:check('in_progress',null),expected}),'pending'));
+test('missing check is unknown',()=>assert.equal(decide({draft:false,checks:[],expected}),'unknown'));
+test('draft is not eligible',()=>assert.equal(decide({draft:true,checks:check('completed','success'),expected}),'draft'));
+test('no expected checks fail closed',()=>assert.equal(decide({draft:false,checks:check('completed','success'),expected:[]}),'unknown'));
