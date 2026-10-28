@@ -64,3 +64,11 @@ La implementación antigua de Cloudflare Worker y D1 permanece en el historial y
 ## Pruebas
 
 Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en GitHub.
+
+## v0.7 — Diagnóstico del cron en el resumen (PR pendiente)
+
+- Cada ejecución de **Multiproject Supervisor** consulta en modo lectura el último run cuyo evento sea \`schedule\` mediante la API de GitHub Actions.
+- El informe distingue: \`never-seen\` (ningún disparo programado), \`stale\` (último disparo hace más de 45 minutos), \`in-progress\`, \`recent-not-green\`, \`observed\` y \`unknown\`.
+- El diagnóstico es **informativo** y no modifica repositorios ni fusiona PR; un fallo al consultar el historial no bloquea la inspección de PR.
+- El permiso adicional \`actions: read\` se limita a lectura. Una ejecución manual verde no prueba el cron; un único \`observed\` tampoco demuestra periodicidad sostenida.
+- Si el historial muestra \`never-seen\`, revisar el estado de habilitación del workflow y las restricciones de Actions en GitHub. El cron sigue siendo best-effort.
