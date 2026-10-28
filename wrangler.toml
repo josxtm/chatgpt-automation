@@ -7,7 +7,6 @@ crons = ["*/3 * * * *"]
 
 [vars]
 AUTOMATION_ENABLED = "false"
-REQUIRED_CHECKS = "verify"
 
 # Create a Cloudflare D1 database, then add its binding:
 # [[d1_databases]]
