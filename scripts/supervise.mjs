@@ -8,6 +8,7 @@ process.on('exit', publish);
 import { validateRepositories, inspectRepository } from '../src/supervisor-core.js';
 import { prSummaryRows } from '../src/summary.js';
 import { assessScheduleHistory } from '../src/schedule-health.js';
+import { assessWorkflowState } from '../src/workflow-state.js';
 
 const config = JSON.parse(readFileSync(new URL('../supervisor.config.json', import.meta.url)));
 const repositories = validateRepositories(config).filter(entry => entry.enabled);
@@ -32,6 +33,17 @@ const ownRepo = process.env.GITHUB_REPOSITORY;
 if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
   report('Estado: **desconocido** (GITHUB_REPOSITORY no disponible).');
 } else {
+  try {
+    const workflow = await get('/repos/' + ownRepo + '/actions/workflows/supervisor.yml');
+    const configuration = assessWorkflowState(workflow);
+    report('- Workflow: **' + configuration.state + '** (' + configuration.reason + ').');
+    if (configuration.state === 'disabled') {
+      report('- Acción: habilitar Multiproject Supervisor en GitHub Actions; el cron no se ejecutará mientras esté deshabilitado.');
+    }
+  } catch (error) {
+    report('- Workflow: **unknown** (no se pudo consultar el estado de habilitación).');
+    console.error('Workflow state unavailable:', String(error));
+  }
   try {
     const history = await get('/repos/' + ownRepo + '/actions/workflows/supervisor.yml/runs?event=schedule&per_page=1');
     const health = assessScheduleHistory(history);
