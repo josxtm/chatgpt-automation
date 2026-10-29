@@ -7,7 +7,7 @@ function publish() { if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process
 process.on('exit', publish);
 import { validateRepositories, inspectRepository } from '../src/supervisor-core.js';
 import { prSummaryRows } from '../src/summary.js';
-import { assessScheduleHistory, assessScheduleCadence } from '../src/schedule-health.js';
+import { assessScheduleHistory, assessScheduleCadence, assessScheduleRevision } from '../src/schedule-health.js';
 import { assessWorkflowState, scheduleDiagnosticHint, cadenceDiagnosticHint, scheduleSilenceHint } from '../src/workflow-state.js';
 
 const config = JSON.parse(readFileSync(new URL('../supervisor.config.json', import.meta.url)));
@@ -53,6 +53,14 @@ if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
     const cadence = assessScheduleCadence(history);
     scheduleState = health.state;
     report('- Estado: **' + health.state + '**.');
+    const revision = assessScheduleRevision(history, process.env.GITHUB_SHA);
+    if (revision.state === 'older-revision') {
+      report('- Revisión del último schedule: **anterior** (\x60' + revision.runSha.slice(0, 7) + '\x60; revisión actual \x60' + revision.currentSha.slice(0, 7) + '\x60). No hay evidencia de un disparo schedule para la revisión actual; esto no demuestra que GitHub haya deshabilitado el cron.');
+    } else if (revision.state === 'current-revision') {
+      report('- Revisión del último schedule: **actual** (\x60' + revision.runSha.slice(0, 7) + '\x60).');
+    } else if (revision.state === 'unknown') {
+      report('- Revisión del último schedule: **desconocida** (' + revision.reason + ').');
+    }
     const silenceHint = scheduleSilenceHint(health);
     if (silenceHint) report('- Aviso de ausencia reciente de disparos: ' + silenceHint);
     if (health.lastRunAt) {
