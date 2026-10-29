@@ -27,3 +27,13 @@ test('invalid or inconsistent history fails closed', () => {
   assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,created_at:'invalid'}]},now).state,'unknown');
   assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,created_at:'2026-10-30T00:00:00Z'}]},now).state,'unknown');
 });
+
+test('unknown scheduled-run statuses fail closed instead of appearing in progress', () => {
+  for (const status of [undefined, null, '', 'mystery']) {
+    const response = assessScheduleHistory({...data,workflow_runs:[{...run,status}]},now);
+    assert.equal(response.state, 'unknown');
+  }
+  for (const status of ['queued', 'in_progress', 'waiting', 'pending', 'requested']) {
+    assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,status,conclusion:null}]},now).state, 'in-progress');
+  }
+});
