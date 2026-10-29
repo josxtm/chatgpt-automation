@@ -8,7 +8,7 @@ process.on('exit', publish);
 import { validateRepositories, inspectRepository } from '../src/supervisor-core.js';
 import { prSummaryRows } from '../src/summary.js';
 import { assessScheduleHistory, assessScheduleCadence } from '../src/schedule-health.js';
-import { assessWorkflowState, scheduleDiagnosticHint, cadenceDiagnosticHint } from '../src/workflow-state.js';
+import { assessWorkflowState, scheduleDiagnosticHint, cadenceDiagnosticHint, scheduleSilenceHint } from '../src/workflow-state.js';
 
 const config = JSON.parse(readFileSync(new URL('../supervisor.config.json', import.meta.url)));
 const repositories = validateRepositories(config).filter(entry => entry.enabled);
@@ -53,6 +53,8 @@ if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
     const cadence = assessScheduleCadence(history);
     scheduleState = health.state;
     report('- Estado: **' + health.state + '**.');
+    const silenceHint = scheduleSilenceHint(health);
+    if (silenceHint) report('- Aviso de ausencia reciente de disparos: ' + silenceHint);
     if (health.lastRunAt) {
       report('- Último disparo `schedule`: ' + health.lastRunAt + ' (' + health.ageMinutes + ' minutos).');
       report('- [Abrir ejecución](https://github.com/' + ownRepo + '/actions/runs/' + health.runId + ').');
