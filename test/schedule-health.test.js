@@ -126,3 +126,19 @@ test('two scheduled starts expose a real gap without claiming reliable cadence',
     sampleWindow: { newest: '2026-10-28T23:55:00.000Z', oldest: '2026-10-28T23:55:00.000Z' }
   });
 });
+
+
+test('incomplete GitHub Actions pages never look like a healthy cadence', () => {
+  // The supervisor requests per_page=12; fewer rows than expected mean the
+  // returned sample is incomplete and cannot support a no-large-gaps verdict.
+  assert.equal(assessScheduleCadence({ total_count: 3, workflow_runs: cadenceRuns.slice(0, 2) }, now).state, 'unknown');
+  assert.equal(assessScheduleCadence({ total_count: 12, workflow_runs: cadenceRuns }, now).state, 'unknown');
+  assert.equal(assessScheduleCadence({ total_count: 13, workflow_runs: cadenceRuns }, now).state, 'unknown');
+  // The first 12 rows are sufficient when the API reports more than 12 runs.
+  const twelve = Array.from({ length: 12 }, (_, index) => ({
+    id: 100 - index,
+    event: 'schedule',
+    created_at: new Date(now - (index + 1) * 5 * 60000).toISOString()
+  }));
+  assert.equal(assessScheduleCadence({ total_count: 25, workflow_runs: twelve }, now).state, 'no-large-gaps');
+});
