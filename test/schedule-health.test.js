@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assessScheduleHistory, assessScheduleCadence } from '../src/schedule-health.js';
+import { assessScheduleHistory, assessScheduleCadence, assessScheduleRevision } from '../src/schedule-health.js';
 
 const now = Date.parse('2026-10-29T00:00:00Z');
 const run = { id: 42, event: 'schedule', created_at: '2026-10-28T23:55:00Z', status: 'completed', conclusion: 'success' };
@@ -161,4 +161,32 @@ test('ten-minute cron allows five minutes of jitter before flagging a missed int
   assert.equal(assessScheduleCadence(sample(10), now).state, 'no-large-gaps');
   assert.equal(assessScheduleCadence(sample(15), now).state, 'no-large-gaps');
   assert.equal(assessScheduleCadence(sample(16), now).state, 'gaps');
+});
+
+
+test('revision diagnostic distinguishes historical schedule from the running commit', () => {
+  const shaA = 'a'.repeat(40);
+  const shaB = 'b'.repeat(40);
+  const history = { total_count: 1, workflow_runs: [{ ...run, head_sha: shaA }] };
+  assert.deepEqual(assessScheduleRevision(history, shaA), {
+    state: 'current-revision', runSha: shaA, currentSha: shaA
+  });
+  assert.deepEqual(assessScheduleRevision(history, shaB), {
+    state: 'older-revision', runSha: shaA, currentSha: shaB
+  });
+  assert.equal(assessScheduleRevision({ total_count: 0, workflow_runs: [] }, shaB).state, 'never-seen');
+});
+
+test('revision diagnostic fails closed on missing or malformed SHA metadata', () => {
+  const sha = 'a'.repeat(40);
+  const history = { total_count: 1, workflow_runs: [{ ...run, head_sha: sha }] };
+  for (const current of [undefined, null, 'short', 'z'.repeat(40)]) {
+    assert.equal(assessScheduleRevision(history, current).state, 'unknown');
+  }
+  for (const oldSha of [undefined, '', 'not-a-sha', 'z'.repeat(40)]) {
+    assert.equal(assessScheduleRevision({ ...history, workflow_runs: [{ ...run, head_sha: oldSha }] }, sha).state, 'unknown');
+  }
+  assert.equal(assessScheduleRevision({ total_count: 1, workflow_runs: [] }, sha).state, 'unknown');
+  assert.equal(assessScheduleRevision({ total_count: 0, workflow_runs: [{ ...run, head_sha: sha }] }, sha).state, 'unknown');
+  assert.equal(assessScheduleRevision({ ...history, workflow_runs: [{ ...run, head_sha: sha, event: 'workflow_dispatch' }] }, sha).state, 'unknown');
 });
