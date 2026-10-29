@@ -60,6 +60,9 @@ if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
     report('- Cadencia observada (' + (cadence.samples ?? 0) + ' disparos): **' + cadence.state + '**.');
     if (cadence.state === 'gaps' || cadence.state === 'no-large-gaps') {
       report('- Intervalos >10 min: ' + cadence.gaps + '; máximo observado: ' + cadence.maxGapMinutes + ' min.');
+      if (cadence.gaps > 0 && cadence.largestGap) {
+        report('- Mayor hueco: entre ' + cadence.largestGap.older + ' y ' + cadence.largestGap.newer + ' (UTC).');
+      }
     } else if (cadence.reason) report('- Motivo de cadencia: ' + cadence.reason + '.');
   } catch (error) {
     report('- Estado: **desconocido** (no se pudo consultar el historial de Actions).');
