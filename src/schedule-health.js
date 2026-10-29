@@ -32,6 +32,9 @@ export function assessScheduleHistory(data, now = Date.now(), maxAgeMinutes = 45
   if (run.status === 'completed' && run.conclusion !== 'success') {
     return { state: ageMinutes > maxAgeMinutes ? 'stale-not-green' : 'recent-not-green', ...details };
   }
+  // An old queued/running job has two problems: it is overdue and still unfinished.
+  // Preserve both signals instead of hiding the pending state under 'stale'.
+  if (ageMinutes > maxAgeMinutes && run.status !== 'completed') return { state: 'stale-in-progress', ...details };
   if (ageMinutes > maxAgeMinutes) return { state: 'stale', ...details };
   if (run.status !== 'completed') return { state: 'in-progress', ...details };
   return { state: 'observed', ...details };
