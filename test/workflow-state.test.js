@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assessWorkflowState } from '../src/workflow-state.js';
+import { assessWorkflowState, scheduleDiagnosticHint } from '../src/workflow-state.js';
 
 const workflow = { path: '.github/workflows/supervisor.yml', state: 'active' };
 
@@ -24,4 +24,12 @@ test('malformed, unrelated and unrecognized metadata fail closed', () => {
   for (const input of [null, {}, [], { ...workflow, path: '.github/workflows/ci.yml' }, { ...workflow, state: 'unexpected' }]) {
     assert.equal(assessWorkflowState(input).state, 'unknown');
   }
+});
+
+test('diagnostic guidance distinguishes disabled, absent and stale schedules', () => {
+  assert.match(scheduleDiagnosticHint('disabled', 'never-seen'), /deshabilitado/);
+  assert.match(scheduleDiagnosticHint('active', 'never-seen'), /sin disparos schedule/);
+  assert.match(scheduleDiagnosticHint('active', 'stale'), /antiguo/);
+  assert.equal(scheduleDiagnosticHint('active', 'observed'), null);
+  assert.equal(scheduleDiagnosticHint('unknown', 'never-seen'), null);
 });
