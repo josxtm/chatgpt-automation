@@ -27,6 +27,15 @@ export function assessScheduleHistory(data, now = Date.now(), maxAgeMinutes = 45
   if (run.status !== 'completed' && !pendingStatuses.has(run.status)) {
     return { state: 'unknown', reason: 'Unrecognized scheduled-run status' };
   }
+  // Unknown conclusions are not valid evidence of a known failure mode.
+  // Keep them unknown rather than presenting malformed API data as a failed run.
+  const knownConclusions = new Set([
+    'success', 'failure', 'cancelled', 'skipped', 'timed_out',
+    'neutral', 'action_required', 'startup_failure', 'stale'
+  ]);
+  if (run.status === 'completed' && run.conclusion != null && !knownConclusions.has(run.conclusion)) {
+    return { state: 'unknown', reason: 'Unrecognized scheduled-run conclusion' };
+  }
   // Preserve both facts when the latest completed run is old AND not green.
   // A stale failure must not be described merely as a scheduling delay.
   if (run.status === 'completed' && run.conclusion !== 'success') {
