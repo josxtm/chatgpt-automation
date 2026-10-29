@@ -154,3 +154,9 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - El Summary muestra las fechas UTC del primer y último disparo `schedule` dentro de la muestra consultada, incluso si solo hay un disparo.
 - Esta ventana permite interpretar los intervalos observados y evita confundir una muestra corta con una supervisión continua. No modifica el cron, permisos ni servicios externos.
 - Se añaden pruebas de los límites temporales con uno, dos y tres disparos.
+
+### Validación de metadatos pendientes y umbrales (v0.8, en revisión)
+
+- Si GitHub marca un disparo `schedule` como pendiente o en ejecución pero le asigna una conclusión final, el supervisor muestra `unknown`: esos metadatos contradictorios no se interpretan como un estado normal.
+- La advertencia de ausencia de nuevos disparos muestra el umbral realmente utilizado, incluso si se configura uno distinto de diez minutos; las pruebas cubren ambos casos.
+- Son cambios de diagnóstico de solo lectura: no alteran el cron, los permisos, los repositorios supervisados ni Cloudflare.

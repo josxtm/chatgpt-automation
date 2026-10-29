@@ -27,6 +27,11 @@ export function assessScheduleHistory(data, now = Date.now(), maxAgeMinutes = 45
   if (run.status !== 'completed' && !pendingStatuses.has(run.status)) {
     return { state: 'unknown', reason: 'Unrecognized scheduled-run status' };
   }
+  // A queued/running execution cannot already have a final conclusion.
+  // Inconsistent API metadata must not be presented as a normal pending run.
+  if (run.status !== 'completed' && run.conclusion != null) {
+    return { state: 'unknown', reason: 'Inconsistent pending-run conclusion' };
+  }
   // Unknown conclusions are not valid evidence of a known failure mode.
   // Keep them unknown rather than presenting malformed API data as a failed run.
   const knownConclusions = new Set([

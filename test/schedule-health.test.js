@@ -35,6 +35,16 @@ test('unknown completed-run conclusions fail closed without inventing a failure'
   assert.equal(assessScheduleHistory({...data, workflow_runs:[{...run, conclusion:null}]}, now).state, 'recent-not-green');
 });
 
+test('pending runs with a final conclusion are inconsistent and fail closed', () => {
+  for (const status of ['queued', 'in_progress', 'waiting', 'pending', 'requested']) {
+    for (const conclusion of ['success', 'failure', '']) {
+      const result = assessScheduleHistory({...data, workflow_runs:[{...run, status, conclusion}]}, now);
+      assert.equal(result.state, 'unknown');
+      assert.match(result.reason, /pending-run conclusion/);
+    }
+  }
+});
+
 test('pending scheduled run is not green', () => {
   assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,status:'in_progress',conclusion:null}]},now).state,'in-progress');
 });

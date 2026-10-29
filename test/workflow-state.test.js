@@ -55,6 +55,9 @@ test('recent successful schedule is flagged when no newer trigger appears for ov
   assert.equal(scheduleSilenceHint({state:'observed',ageMinutes:10}), null);
   assert.match(scheduleSilenceHint({state:'observed',ageMinutes:11}), /más de diez minutos/);
   assert.equal(scheduleSilenceHint({state:'observed',ageMinutes:5}), null);
+  assert.equal(scheduleSilenceHint({state:'observed',ageMinutes:15}, 15), null);
+  assert.match(scheduleSilenceHint({state:'observed',ageMinutes:16}, 15), /más de 15 minutos/);
+  assert.doesNotMatch(scheduleSilenceHint({state:'observed',ageMinutes:16}, 15), /diez minutos/);
   // Do not duplicate existing failure, stale, queue or unknown diagnostics.
   for (const state of ['stale', 'stale-not-green', 'in-progress', 'unknown', 'never-seen']) {
     assert.equal(scheduleSilenceHint({state,ageMinutes:30}), null);

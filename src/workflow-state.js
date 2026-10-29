@@ -74,5 +74,5 @@ export function scheduleSilenceHint(health, thresholdMinutes = 10) {
       !Number.isFinite(health.ageMinutes) || health.ageMinutes < 0 ||
       !Number.isFinite(thresholdMinutes) || thresholdMinutes <= 0) return null;
   if (health.ageMinutes <= thresholdMinutes) return null;
-  return 'El último disparo schedule terminó en verde, pero no hay uno más reciente desde hace más de diez minutos: revisar el historial de Actions y posibles retrasos del planificador; un CI verde no confirma la periodicidad.';
+  return `El último disparo schedule terminó en verde, pero no hay uno más reciente desde hace más de ${thresholdMinutes} minutos: revisar el historial de Actions y posibles retrasos del planificador; un CI verde no confirma la periodicidad.`;
 }
