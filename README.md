@@ -97,3 +97,10 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Con menos de tres disparos indica `insufficient-data`; ante datos malformados indica `unknown`. Un historial sin huecos grandes **no demuestra fiabilidad futura**, y la antigüedad del último disparo se informa por separado.
 - Se añaden pruebas para intervalos normales, retrasos, datos insuficientes y metadatos inconsistentes.
 - Los estados de ejecución no reconocidos se clasifican como `unknown` incluso cuando el disparo es antiguo; la antigüedad no debe ocultar metadatos inválidos.
+
+### Diagnóstico combinado de antigüedad y fallo (v0.8, en revisión)
+
+- Si el último disparo programado terminó sin éxito **y** tiene más de 45 minutos, se informa `stale-not-green` en vez de ocultar el fallo bajo `stale`.
+- El resumen recomienda inspeccionar los **jobs y logs** de la ejecución fallida, además de revisar posibles retrasos del planificador.
+- Un disparo reciente no satisfactorio sigue figurando como `recent-not-green`; un disparo antiguo satisfactorio sigue figurando como `stale`. Son diagnósticos informativos, sin escrituras ni cambios de cron.
+- Las pruebas cubren fallos antiguos y conclusiones ausentes para evitar falsos positivos.
