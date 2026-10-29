@@ -28,6 +28,9 @@ export function scheduleDiagnosticHint(workflowState, scheduleState) {
   if (workflowState === 'active' && scheduleState === 'recent-not-green') {
     return 'Se registró un disparo schedule que no terminó en verde: abrir la ejecución indicada y revisar los jobs y logs.';
   }
+  if (workflowState === 'active' && scheduleState === 'stale-not-green') {
+    return 'El último disparo schedule es antiguo y no terminó en verde: revisar los jobs y logs de esa ejecución, además de los posibles retrasos de GitHub Actions.';
+  }
   if (workflowState === 'active' && scheduleState === 'stale') {
     return 'El último disparo schedule es antiguo: revisar retrasos o interrupciones de GitHub Actions sin asumir una cadencia garantizada.';
   }
