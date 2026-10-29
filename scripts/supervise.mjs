@@ -7,7 +7,7 @@ function publish() { if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process
 process.on('exit', publish);
 import { validateRepositories, inspectRepository } from '../src/supervisor-core.js';
 import { prSummaryRows } from '../src/summary.js';
-import { assessScheduleHistory } from '../src/schedule-health.js';
+import { assessScheduleHistory, assessScheduleCadence } from '../src/schedule-health.js';
 import { assessWorkflowState, scheduleDiagnosticHint } from '../src/workflow-state.js';
 
 const config = JSON.parse(readFileSync(new URL('../supervisor.config.json', import.meta.url)));
@@ -45,14 +45,22 @@ if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
     console.error('Workflow state unavailable:', String(error));
   }
   try {
-    const history = await get('/repos/' + ownRepo + '/actions/workflows/supervisor.yml/runs?event=schedule&per_page=1');
-    const health = assessScheduleHistory(history);
+    const history = await get('/repos/' + ownRepo + '/actions/workflows/supervisor.yml/runs?event=schedule&per_page=12');
+    const latest = Array.isArray(history?.workflow_runs)
+      ? { ...history, workflow_runs: history.workflow_runs.slice(0, 1) }
+      : history;
+    const health = assessScheduleHistory(latest);
+    const cadence = assessScheduleCadence(history);
     scheduleState = health.state;
     report('- Estado: **' + health.state + '**.');
     if (health.lastRunAt) {
       report('- Último disparo `schedule`: ' + health.lastRunAt + ' (' + health.ageMinutes + ' minutos).');
       report('- [Abrir ejecución](https://github.com/' + ownRepo + '/actions/runs/' + health.runId + ').');
     } else if (health.reason) report('- Motivo: ' + health.reason + '.');
+    report('- Cadencia observada (' + (cadence.samples ?? 0) + ' disparos): **' + cadence.state + '**.');
+    if (cadence.state === 'gaps' || cadence.state === 'no-large-gaps') {
+      report('- Intervalos >10 min: ' + cadence.gaps + '; máximo observado: ' + cadence.maxGapMinutes + ' min.');
+    } else if (cadence.reason) report('- Motivo de cadencia: ' + cadence.reason + '.');
   } catch (error) {
     report('- Estado: **desconocido** (no se pudo consultar el historial de Actions).');
     console.error('Schedule history unavailable:', String(error));
