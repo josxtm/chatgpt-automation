@@ -129,3 +129,31 @@ export function assessScheduleCadence(data, now = Date.now(), maxGapMinutes = 15
     ...(data.total_count > runs.length ? { limited: true, totalRuns: data.total_count } : {})
   };
 }
+
+/**
+ * Compare the latest scheduled run with the revision being inspected.
+ * A different SHA is evidence of an older revision, NOT proof that the
+ * current cron is disabled or broken (a new commit may have just landed).
+ */
+export function assessScheduleRevision(data, currentSha) {
+  const validSha = sha => typeof sha === 'string' && /^[a-f0-9]{40}$/i.test(sha);
+  if (!validSha(currentSha)) return { state: 'unknown', reason: 'Current commit SHA unavailable' };
+  if (!data || !Number.isSafeInteger(data.total_count) || data.total_count < 0 ||
+      !Array.isArray(data.workflow_runs)) {
+    return { state: 'unknown', reason: 'Malformed scheduled-run history' };
+  }
+  if (data.total_count === 0 && data.workflow_runs.length === 0) return { state: 'never-seen' };
+  if (data.total_count === 0 || data.workflow_runs.length < 1) {
+    return { state: 'unknown', reason: 'Inconsistent scheduled-run history' };
+  }
+  const latest = data.workflow_runs[0];
+  if (latest?.event !== 'schedule' || !Number.isSafeInteger(latest.id) || latest.id <= 0 ||
+      !validSha(latest.head_sha)) {
+    return { state: 'unknown', reason: 'Invalid scheduled-run revision metadata' };
+  }
+  return {
+    state: latest.head_sha.toLowerCase() === currentSha.toLowerCase() ? 'current-revision' : 'older-revision',
+    runSha: latest.head_sha.toLowerCase(),
+    currentSha: currentSha.toLowerCase()
+  };
+}
