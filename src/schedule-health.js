@@ -27,10 +27,12 @@ export function assessScheduleHistory(data, now = Date.now(), maxAgeMinutes = 45
   if (run.status !== 'completed' && !pendingStatuses.has(run.status)) {
     return { state: 'unknown', reason: 'Unrecognized scheduled-run status' };
   }
-  if (ageMinutes > maxAgeMinutes) return { state: 'stale', ...details };
+  // Preserve both facts when the latest completed run is old AND not green.
+  // A stale failure must not be described merely as a scheduling delay.
   if (run.status === 'completed' && run.conclusion !== 'success') {
-    return { state: 'recent-not-green', ...details };
+    return { state: ageMinutes > maxAgeMinutes ? 'stale-not-green' : 'recent-not-green', ...details };
   }
+  if (ageMinutes > maxAgeMinutes) return { state: 'stale', ...details };
   if (run.status !== 'completed') return { state: 'in-progress', ...details };
   return { state: 'observed', ...details };
 }
