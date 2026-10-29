@@ -33,3 +33,48 @@ export function assessScheduleHistory(data, now = Date.now(), maxAgeMinutes = 45
   if (run.status !== 'completed') return { state: 'in-progress', ...details };
   return { state: 'observed', ...details };
 }
+
+/**
+ * Advisory sample of the most recent scheduled starts. A short sample without
+ * large gaps does not guarantee future five-minute delivery.
+ */
+export function assessScheduleCadence(data, now = Date.now(), maxGapMinutes = 10) {
+  if (!Number.isFinite(now) || !Number.isFinite(maxGapMinutes) || maxGapMinutes <= 0) {
+    throw new TypeError('Invalid cadence assessment inputs');
+  }
+  if (!data || !Number.isSafeInteger(data.total_count) || data.total_count < 0 ||
+      !Array.isArray(data.workflow_runs)) {
+    return { state: 'unknown', reason: 'Malformed scheduled-run history' };
+  }
+  const runs = data.workflow_runs;
+  if (data.total_count === 0 && runs.length === 0) return { state: 'never-seen', samples: 0 };
+  if (!runs.length || runs.length > 12 || runs.length > data.total_count) {
+    return { state: 'unknown', reason: 'Inconsistent cadence sample' };
+  }
+  const ids = new Set();
+  let previous = null;
+  let gaps = 0;
+  let maxGap = 0;
+  for (const run of runs) {
+    const timestamp = Date.parse(run?.created_at);
+    if (run?.event !== 'schedule' || !Number.isSafeInteger(run?.id) || run.id <= 0 ||
+        ids.has(run.id) || !Number.isFinite(timestamp) || timestamp > now ||
+        (previous !== null && timestamp >= previous)) {
+      return { state: 'unknown', reason: 'Invalid or unordered scheduled-run metadata' };
+    }
+    ids.add(run.id);
+    if (previous !== null) {
+      const gapMinutes = (previous - timestamp) / 60000;
+      maxGap = Math.max(maxGap, gapMinutes);
+      if (gapMinutes > maxGapMinutes) gaps++;
+    }
+    previous = timestamp;
+  }
+  if (runs.length < 3) return { state: 'insufficient-data', samples: runs.length };
+  return {
+    state: gaps ? 'gaps' : 'no-large-gaps',
+    samples: runs.length,
+    gaps,
+    maxGapMinutes: Math.round(maxGap * 10) / 10
+  };
+}
