@@ -148,3 +148,17 @@ test('incomplete GitHub Actions pages never look like a healthy cadence', () => 
   assert.equal(complete.state, 'no-large-gaps');
   assert.equal(complete.limited, undefined);
 });
+
+test('ten-minute cron allows five minutes of jitter before flagging a missed interval', () => {
+  const sample = (gapMinutes) => ({
+    total_count: 3,
+    workflow_runs: [
+      { id: 3, event: 'schedule', created_at: new Date(now - 5 * 60000).toISOString() },
+      { id: 2, event: 'schedule', created_at: new Date(now - (5 + gapMinutes) * 60000).toISOString() },
+      { id: 1, event: 'schedule', created_at: new Date(now - (15 + gapMinutes) * 60000).toISOString() }
+    ]
+  });
+  assert.equal(assessScheduleCadence(sample(10), now).state, 'no-large-gaps');
+  assert.equal(assessScheduleCadence(sample(15), now).state, 'no-large-gaps');
+  assert.equal(assessScheduleCadence(sample(16), now).state, 'gaps');
+});
