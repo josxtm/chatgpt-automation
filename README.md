@@ -160,3 +160,9 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Si GitHub marca un disparo `schedule` como pendiente o en ejecución pero le asigna una conclusión final, el supervisor muestra `unknown`: esos metadatos contradictorios no se interpretan como un estado normal.
 - La advertencia de ausencia de nuevos disparos muestra el umbral realmente utilizado, incluso si se configura uno distinto de diez minutos; las pruebas cubren ambos casos.
 - Son cambios de diagnóstico de solo lectura: no alteran el cron, los permisos, los repositorios supervisados ni Cloudflare.
+
+### Protección frente a muestras incompletas de Actions (v0.8, en revisión)
+
+- La consulta de cadencia pide hasta 12 ejecuciones `schedule`. Si GitHub devuelve menos filas que las esperadas según `total_count` (máximo 12), el informe marca `unknown` en lugar de declarar que no hay huecos.
+- Cuando existen más de 12 ejecuciones, se acepta una página completa de 12 como **muestra limitada**, sin prometer continuidad fuera de la ventana observada.
+- Se añaden pruebas de páginas incompletas y de una muestra válida de 12 disparos. No se modifica el cron, los permisos, otros repositorios ni Cloudflare.
