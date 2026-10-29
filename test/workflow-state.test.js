@@ -42,8 +42,8 @@ test('diagnostic guidance distinguishes disabled, absent and stale schedules', (
 });
 
 test('cadence guidance flags gaps even when the latest scheduled run succeeded', () => {
-  assert.match(cadenceDiagnosticHint({state:'gaps',samples:4,gaps:1}), /huecos de más de diez minutos/);
-  assert.match(cadenceDiagnosticHint({state:'insufficient-data',samples:2,gaps:1}), /huecos de más de diez minutos/);
+  assert.match(cadenceDiagnosticHint({state:'gaps',samples:4,gaps:1}), /huecos de más de quince minutos/);
+  assert.match(cadenceDiagnosticHint({state:'insufficient-data',samples:2,gaps:1}), /huecos de más de quince minutos/);
   assert.match(cadenceDiagnosticHint({state:'insufficient-data',samples:1,gaps:0}), /pocos disparos/);
   assert.match(cadenceDiagnosticHint({state:'unknown'}), /no es verificable/);
   assert.match(cadenceDiagnosticHint(null), /No se pudo evaluar/);
@@ -51,9 +51,9 @@ test('cadence guidance flags gaps even when the latest scheduled run succeeded',
   assert.equal(cadenceDiagnosticHint({state:'never-seen',samples:0}), null);
 });
 
-test('recent successful schedule is flagged when no newer trigger appears for over ten minutes', () => {
-  assert.equal(scheduleSilenceHint({state:'observed',ageMinutes:10}), null);
-  assert.match(scheduleSilenceHint({state:'observed',ageMinutes:11}), /más de 10 minutos/);
+test('recent successful schedule is flagged only after twenty minutes of silence', () => {
+  assert.equal(scheduleSilenceHint({state:'observed',ageMinutes:20}), null);
+  assert.match(scheduleSilenceHint({state:'observed',ageMinutes:21}), /más de 20 minutos/);
   assert.equal(scheduleSilenceHint({state:'observed',ageMinutes:5}), null);
   assert.equal(scheduleSilenceHint({state:'observed',ageMinutes:15}, 15), null);
   assert.match(scheduleSilenceHint({state:'observed',ageMinutes:16}, 15), /más de 15 minutos/);
