@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assessScheduleHistory } from '../src/schedule-health.js';
+import { assessScheduleHistory, assessScheduleCadence } from '../src/schedule-health.js';
 
 const now = Date.parse('2026-10-29T00:00:00Z');
 const run = { id: 42, event: 'schedule', created_at: '2026-10-28T23:55:00Z', status: 'completed', conclusion: 'success' };
@@ -36,4 +36,36 @@ test('unknown scheduled-run statuses fail closed instead of appearing in progres
   for (const status of ['queued', 'in_progress', 'waiting', 'pending', 'requested']) {
     assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,status,conclusion:null}]},now).state, 'in-progress');
   }
+});
+
+const cadenceRuns = [
+  { id: 3, event: 'schedule', created_at: '2026-10-28T23:55:00Z' },
+  { id: 2, event: 'schedule', created_at: '2026-10-28T23:50:00Z' },
+  { id: 1, event: 'schedule', created_at: '2026-10-28T23:45:00Z' }
+];
+
+test('cadence reports observed intervals, never a guarantee', () => {
+  assert.deepEqual(assessScheduleCadence({ total_count: 3, workflow_runs: cadenceRuns }, now), {
+    state: 'no-large-gaps', samples: 3, gaps: 0, maxGapMinutes: 5
+  });
+  const delayed = [cadenceRuns[0], { ...cadenceRuns[1], created_at: '2026-10-28T23:35:00Z' },
+    { ...cadenceRuns[2], created_at: '2026-10-28T23:30:00Z' }];
+  assert.deepEqual(assessScheduleCadence({ total_count: 3, workflow_runs: delayed }, now), {
+    state: 'gaps', samples: 3, gaps: 1, maxGapMinutes: 20
+  });
+});
+
+test('cadence requires enough scheduled runs and rejects malformed samples', () => {
+  assert.equal(assessScheduleCadence({ total_count: 0, workflow_runs: [] }, now).state, 'never-seen');
+  assert.equal(assessScheduleCadence({ total_count: 1, workflow_runs: cadenceRuns.slice(0, 1) }, now).state, 'insufficient-data');
+  for (const runs of [
+    [cadenceRuns[0], cadenceRuns[0], cadenceRuns[2]],
+    [cadenceRuns[1], cadenceRuns[0], cadenceRuns[2]],
+    [{ ...cadenceRuns[0], event: 'workflow_dispatch' }, ...cadenceRuns.slice(1)],
+    [{ ...cadenceRuns[0], created_at: '2026-10-30T00:00:00Z' }, ...cadenceRuns.slice(1)]
+  ]) {
+    assert.equal(assessScheduleCadence({ total_count: 3, workflow_runs: runs }, now).state, 'unknown');
+  }
+  assert.equal(assessScheduleCadence({ total_count: 2, workflow_runs: cadenceRuns }, now).state, 'unknown');
+  assert.equal(assessScheduleCadence({ total_count: 3, workflow_runs: null }, now).state, 'unknown');
 });
