@@ -8,7 +8,7 @@ process.on('exit', publish);
 import { validateRepositories, inspectRepository } from '../src/supervisor-core.js';
 import { prSummaryRows } from '../src/summary.js';
 import { assessScheduleHistory } from '../src/schedule-health.js';
-import { assessWorkflowState } from '../src/workflow-state.js';
+import { assessWorkflowState, scheduleDiagnosticHint } from '../src/workflow-state.js';
 
 const config = JSON.parse(readFileSync(new URL('../supervisor.config.json', import.meta.url)));
 const repositories = validateRepositories(config).filter(entry => entry.enabled);
@@ -33,13 +33,13 @@ const ownRepo = process.env.GITHUB_REPOSITORY;
 if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
   report('Estado: **desconocido** (GITHUB_REPOSITORY no disponible).');
 } else {
+  let workflowState = 'unknown';
+  let scheduleState = 'unknown';
   try {
     const workflow = await get('/repos/' + ownRepo + '/actions/workflows/supervisor.yml');
     const configuration = assessWorkflowState(workflow);
+    workflowState = configuration.state;
     report('- Workflow: **' + configuration.state + '** (' + configuration.reason + ').');
-    if (configuration.state === 'disabled') {
-      report('- Acción: habilitar Multiproject Supervisor en GitHub Actions; el cron no se ejecutará mientras esté deshabilitado.');
-    }
   } catch (error) {
     report('- Workflow: **unknown** (no se pudo consultar el estado de habilitación).');
     console.error('Workflow state unavailable:', String(error));
@@ -47,6 +47,7 @@ if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
   try {
     const history = await get('/repos/' + ownRepo + '/actions/workflows/supervisor.yml/runs?event=schedule&per_page=1');
     const health = assessScheduleHistory(history);
+    scheduleState = health.state;
     report('- Estado: **' + health.state + '**.');
     if (health.lastRunAt) {
       report('- Último disparo `schedule`: ' + health.lastRunAt + ' (' + health.ageMinutes + ' minutos).');
@@ -56,6 +57,8 @@ if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
     report('- Estado: **desconocido** (no se pudo consultar el historial de Actions).');
     console.error('Schedule history unavailable:', String(error));
   }
+  const hint = scheduleDiagnosticHint(workflowState, scheduleState);
+  if (hint) report('- Siguiente comprobación: ' + hint);
 }
 report('- Una ejecución reciente no garantiza una cadencia exacta de cinco minutos.');
 report('');
