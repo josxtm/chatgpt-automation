@@ -81,14 +81,14 @@ const cadenceRuns = [
 test('cadence reports observed intervals, never a guarantee', () => {
   assert.deepEqual(assessScheduleCadence({ total_count: 3, workflow_runs: cadenceRuns }, now), {
     state: 'no-large-gaps', samples: 3, gaps: 0, maxGapMinutes: 5,
-    largestGap: { newer: '2026-10-28T23:55:00.000Z', older: '2026-10-28T23:50:00.000Z' },
+    largestGap: { newer: '2026-10-28T23:55:00.000Z', older: '2026-10-28T23:50:00.000Z', newerRunId: 3, olderRunId: 2 },
     sampleWindow: { newest: '2026-10-28T23:55:00.000Z', oldest: '2026-10-28T23:45:00.000Z' }
   });
   const delayed = [cadenceRuns[0], { ...cadenceRuns[1], created_at: '2026-10-28T23:35:00Z' },
     { ...cadenceRuns[2], created_at: '2026-10-28T23:30:00Z' }];
   assert.deepEqual(assessScheduleCadence({ total_count: 3, workflow_runs: delayed }, now), {
     state: 'gaps', samples: 3, gaps: 1, maxGapMinutes: 20,
-    largestGap: { newer: '2026-10-28T23:55:00.000Z', older: '2026-10-28T23:35:00.000Z' },
+    largestGap: { newer: '2026-10-28T23:55:00.000Z', older: '2026-10-28T23:35:00.000Z', newerRunId: 3, olderRunId: 2 },
     sampleWindow: { newest: '2026-10-28T23:55:00.000Z', oldest: '2026-10-28T23:30:00.000Z' }
   });
 });
@@ -118,7 +118,7 @@ test('two scheduled starts expose a real gap without claiming reliable cadence',
     samples: 2,
     gaps: 1,
     maxGapMinutes: 380,
-    largestGap: { newer: '2026-10-28T23:55:00.000Z', older: '2026-10-28T17:35:00.000Z' },
+    largestGap: { newer: '2026-10-28T23:55:00.000Z', older: '2026-10-28T17:35:00.000Z', newerRunId: 3, olderRunId: 2 },
     sampleWindow: { newest: '2026-10-28T23:55:00.000Z', oldest: '2026-10-28T17:35:00.000Z' }
   });
   assert.deepEqual(assessScheduleCadence({ total_count: 1, workflow_runs: [cadenceRuns[0]] }, now), {

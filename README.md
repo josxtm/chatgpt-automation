@@ -172,3 +172,9 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Cuando existen más de 12 disparos `schedule`, el Summary avisa explícitamente que solo se han analizado los 12 más recientes e indica el total registrado por GitHub.
 - Una muestra sin grandes huecos no acredita regularidad fuera de esa ventana. Se añaden pruebas para muestras completas y limitadas.
 - Cambio informativo y de solo lectura: no altera el cron, los permisos, Cloudflare ni otros repositorios.
+
+### Enlaces directos al mayor hueco observado (v0.8, en revisión)
+
+- Cuando se detecta un hueco entre dos ejecuciones `schedule`, el Summary enlaza directamente la ejecución anterior y la posterior, además de mostrar sus fechas UTC. Así se pueden revisar los jobs y los registros de ambos extremos sin buscar manualmente sus identificadores.
+- Los enlaces se construyen solo con identificadores numéricos validados de la respuesta de GitHub; no hay cambios de permisos, cron, Cloudflare ni acciones de escritura.
+- Las pruebas verifican que los identificadores corresponden a las dos ejecuciones del intervalo máximo, también cuando la muestra contiene solo dos disparos.

@@ -68,6 +68,7 @@ if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
       report('- Intervalos >10 min: ' + cadence.gaps + '; máximo observado: ' + cadence.maxGapMinutes + ' min.');
       if (cadence.gaps > 0 && cadence.largestGap) {
         report('- Mayor hueco: entre ' + cadence.largestGap.older + ' y ' + cadence.largestGap.newer + ' (UTC).');
+        report('- Investigar extremos del hueco: [ejecución anterior](https://github.com/' + ownRepo + '/actions/runs/' + cadence.largestGap.olderRunId + ') y [ejecución posterior](https://github.com/' + ownRepo + '/actions/runs/' + cadence.largestGap.newerRunId + ').');
       }
     } else if (cadence.reason) report('- Motivo de cadencia: ' + cadence.reason + '.');
     const cadenceHint = cadenceDiagnosticHint(cadence);

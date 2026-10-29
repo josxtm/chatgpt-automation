@@ -76,6 +76,7 @@ export function assessScheduleCadence(data, now = Date.now(), maxGapMinutes = 10
   }
   const ids = new Set();
   let previous = null;
+  let previousRunId = null;
   let gaps = 0;
   let maxGap = 0;
   let largestGap = null;
@@ -91,11 +92,17 @@ export function assessScheduleCadence(data, now = Date.now(), maxGapMinutes = 10
       const gapMinutes = (previous - timestamp) / 60000;
       if (gapMinutes > maxGap) {
         maxGap = gapMinutes;
-        largestGap = { newer: new Date(previous).toISOString(), older: new Date(timestamp).toISOString() };
+        largestGap = {
+          newer: new Date(previous).toISOString(),
+          older: new Date(timestamp).toISOString(),
+          newerRunId: previousRunId,
+          olderRunId: run.id
+        };
       }
       if (gapMinutes > maxGapMinutes) gaps++;
     }
     previous = timestamp;
+    previousRunId = run.id;
   }
   const sampleWindow = {
     newest: new Date(Date.parse(runs[0].created_at)).toISOString(),
