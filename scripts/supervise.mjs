@@ -63,6 +63,7 @@ if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
     if (cadence.sampleWindow) {
       report('- Ventana de la muestra (UTC): ' + cadence.sampleWindow.oldest + ' → ' + cadence.sampleWindow.newest + '.');
     }
+    if (cadence.limited) report('- Muestra limitada: ' + cadence.samples + ' de ' + cadence.totalRuns + ' disparos registrados; no se evalúan intervalos anteriores.');
     if (cadence.state === 'gaps' || cadence.state === 'no-large-gaps' || (cadence.state === 'insufficient-data' && cadence.samples >= 2)) {
       report('- Intervalos >10 min: ' + cadence.gaps + '; máximo observado: ' + cadence.maxGapMinutes + ' min.');
       if (cadence.gaps > 0 && cadence.largestGap) {

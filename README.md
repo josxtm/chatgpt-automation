@@ -166,3 +166,9 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - La consulta de cadencia pide hasta 12 ejecuciones `schedule`. Si GitHub devuelve menos filas que las esperadas según `total_count` (máximo 12), el informe marca `unknown` en lugar de declarar que no hay huecos.
 - Cuando existen más de 12 ejecuciones, se acepta una página completa de 12 como **muestra limitada**, sin prometer continuidad fuera de la ventana observada.
 - Se añaden pruebas de páginas incompletas y de una muestra válida de 12 disparos. No se modifica el cron, los permisos, otros repositorios ni Cloudflare.
+
+### Visibilidad del límite de muestreo (v0.8, en revisión)
+
+- Cuando existen más de 12 disparos `schedule`, el Summary avisa explícitamente que solo se han analizado los 12 más recientes e indica el total registrado por GitHub.
+- Una muestra sin grandes huecos no acredita regularidad fuera de esa ventana. Se añaden pruebas para muestras completas y limitadas.
+- Cambio informativo y de solo lectura: no altera el cron, los permisos, Cloudflare ni otros repositorios.

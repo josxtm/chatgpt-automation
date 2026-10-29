@@ -140,5 +140,11 @@ test('incomplete GitHub Actions pages never look like a healthy cadence', () => 
     event: 'schedule',
     created_at: new Date(now - (index + 1) * 5 * 60000).toISOString()
   }));
-  assert.equal(assessScheduleCadence({ total_count: 25, workflow_runs: twelve }, now).state, 'no-large-gaps');
+  const limited = assessScheduleCadence({ total_count: 25, workflow_runs: twelve }, now);
+  assert.equal(limited.state, 'no-large-gaps');
+  assert.equal(limited.limited, true);
+  assert.equal(limited.totalRuns, 25);
+  const complete = assessScheduleCadence({ total_count: 12, workflow_runs: twelve }, now);
+  assert.equal(complete.state, 'no-large-gaps');
+  assert.equal(complete.limited, undefined);
 });

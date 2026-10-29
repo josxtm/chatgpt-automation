@@ -117,6 +117,8 @@ export function assessScheduleCadence(data, now = Date.now(), maxGapMinutes = 10
     gaps,
     maxGapMinutes: Math.round(maxGap * 10) / 10,
     largestGap,
-    sampleWindow
+    sampleWindow,
+    // A full first page may still omit older scheduled starts.
+    ...(data.total_count > runs.length ? { limited: true, totalRuns: data.total_count } : {})
   };
 }
