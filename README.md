@@ -123,6 +123,13 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Las conclusiones reconocidas sin éxito (`failure`, `cancelled`, `skipped`, `timed_out`, `neutral`, `action_required`, `startup_failure`, `stale`) siguen apareciendo como `recent-not-green` o `stale-not-green` según la antigüedad.
 - Una conclusión nula nunca se considera verde. Se añaden pruebas de entradas malformadas; no cambian permisos, cron, acciones de escritura ni Cloudflare.
 
+### Orientación ante diagnósticos incompletos (v0.8, en revisión)
+
+- Cuando GitHub no permite confirmar el estado de habilitación del workflow (`unknown`), el resumen recomienda comprobar Actions, permisos `actions:read` y disponibilidad de la API. **No se presupone que el cron funciona**.
+- Si el workflow está activo pero el historial de disparos es `unknown`, se recomienda revisar la respuesta de la API y los metadatos de ejecuciones.
+- Si el último disparo está `in-progress`, se informa de que todavía no tiene conclusión y se recomienda revisar cola y jobs.
+- Solo se amplían mensajes y pruebas; no cambian el cron, los permisos, la configuración multiproyecto ni se habilita Cloudflare.
+
 ### Visibilidad de huecos con solo dos disparos (v0.8, en revisión)
 
 - Si GitHub solo ha registrado **dos** ejecuciones `schedule`, el diagnóstico mantiene `insufficient-data` (no demuestra una cadencia estable), pero **no oculta** el intervalo entre ambas.
