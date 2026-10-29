@@ -67,11 +67,11 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 
 ## v0.7 — Diagnóstico del cron en el resumen (integrado en main)
 
-- Cada ejecución de **Multiproject Supervisor** consulta en modo lectura el último run cuyo evento sea \`schedule\` mediante la API de GitHub Actions.
-- El informe distingue: \`never-seen\` (ningún disparo programado), \`stale\` (último disparo hace más de 45 minutos), \`in-progress\`, \`recent-not-green\`, \`observed\` y \`unknown\`.
+- Cada ejecución de **Multiproject Supervisor** consulta en modo lectura el último run cuyo evento sea `schedule` mediante la API de GitHub Actions.
+- El informe distingue: `never-seen` (ningún disparo programado), `stale` (último disparo hace más de 45 minutos), `in-progress`, `recent-not-green`, `observed` y `unknown`.
 - El diagnóstico es **informativo** y no modifica repositorios ni fusiona PR; un fallo al consultar el historial no bloquea la inspección de PR.
-- El permiso adicional \`actions: read\` se limita a lectura. Una ejecución manual verde no prueba el cron; un único \`observed\` tampoco demuestra periodicidad sostenida.
-- Si el historial muestra \`never-seen\`, revisar el estado de habilitación del workflow y las restricciones de Actions en GitHub. El cron sigue siendo best-effort.
+- El permiso adicional `actions: read` se limita a lectura. Una ejecución manual verde no prueba el cron; un único `observed` tampoco demuestra periodicidad sostenida.
+- Si el historial muestra `never-seen`, revisar el estado de habilitación del workflow y las restricciones de Actions en GitHub. El cron sigue siendo best-effort.
 
 ## v0.8 — Diagnóstico del estado del workflow (PR de revisión)
 
@@ -86,4 +86,6 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Si el workflow está **disabled**, el resumen indica que debe habilitarse manualmente; no se cambia su estado automáticamente.
 - Si está **active** pero el historial indica **never-seen**, el resumen recuerda comprobar Actions, la rama predeterminada y las restricciones de GitHub. Un CI verde no demuestra que el cron se haya ejecutado.
 - Si está **active** y el historial indica **stale**, se indica que se revisen posibles retrasos de GitHub Actions, sin prometer una cadencia exacta.
+- Si está **active** y aparece **recent-not-green**, el resumen recomienda abrir el run programado y revisar sus jobs y logs.
+- Si el workflow figura como **unavailable** (eliminado), el resumen recomienda comprobar su presencia en la rama predeterminada.
 - La orientación es informativa y se prueba con funciones puras; no añade permisos ni operaciones de escritura.
