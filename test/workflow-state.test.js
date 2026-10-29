@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assessWorkflowState, scheduleDiagnosticHint, cadenceDiagnosticHint } from '../src/workflow-state.js';
+import { assessWorkflowState, scheduleDiagnosticHint, cadenceDiagnosticHint, scheduleSilenceHint } from '../src/workflow-state.js';
 
 const workflow = { path: '.github/workflows/supervisor.yml', state: 'active' };
 
@@ -49,4 +49,16 @@ test('cadence guidance flags gaps even when the latest scheduled run succeeded',
   assert.match(cadenceDiagnosticHint(null), /No se pudo evaluar/);
   assert.equal(cadenceDiagnosticHint({state:'no-large-gaps',samples:12,gaps:0}), null);
   assert.equal(cadenceDiagnosticHint({state:'never-seen',samples:0}), null);
+});
+
+test('recent successful schedule is flagged when no newer trigger appears for over ten minutes', () => {
+  assert.equal(scheduleSilenceHint({state:'observed',ageMinutes:10}), null);
+  assert.match(scheduleSilenceHint({state:'observed',ageMinutes:11}), /más de diez minutos/);
+  assert.equal(scheduleSilenceHint({state:'observed',ageMinutes:5}), null);
+  // Do not duplicate existing failure, stale, queue or unknown diagnostics.
+  for (const state of ['stale', 'stale-not-green', 'in-progress', 'unknown', 'never-seen']) {
+    assert.equal(scheduleSilenceHint({state,ageMinutes:30}), null);
+  }
+  assert.equal(scheduleSilenceHint({state:'observed',ageMinutes:NaN}), null);
+  assert.equal(scheduleSilenceHint(null), null);
 });
