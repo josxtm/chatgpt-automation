@@ -80,3 +80,10 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Si el workflow está deshabilitado, el informe indica que hay que habilitarlo en Actions; **no cambia la configuración ni activa nada automáticamente**.
 - Si GitHub no permite consultar el estado, se muestra `unknown` sin detener la inspección de PR. El token solo necesita `actions: read`, ya configurado.
 - Pruebas unitarias cubren estados activos, deshabilitados, eliminados y metadatos inesperados. No se activan servicios externos ni Cloudflare.
+
+### Guía de diagnóstico combinada (v0.8)
+
+- Si el workflow está **disabled**, el resumen indica que debe habilitarse manualmente; no se cambia su estado automáticamente.
+- Si está **active** pero el historial indica **never-seen**, el resumen recuerda comprobar Actions, la rama predeterminada y las restricciones de GitHub. Un CI verde no demuestra que el cron se haya ejecutado.
+- Si está **active** y el historial indica **stale**, se indica que se revisen posibles retrasos de GitHub Actions, sin prometer una cadencia exacta.
+- La orientación es informativa y se prueba con funciones puras; no añade permisos ni operaciones de escritura.
