@@ -81,6 +81,7 @@ export function scheduleSilenceHint(health, thresholdMinutes = 20) {
 // A link is navigation evidence only; it does not prove the workflow is active.
 export function workflowActionsLink(workflow, repository) {
   if (!workflow || !Number.isSafeInteger(workflow.id) || workflow.id <= 0 ||
-      typeof repository !== 'string' || !/^[A-Za-z0-9_-][A-Za-z0-9_.-]*\/[A-Za-z0-9_-][A-Za-z0-9_.-]*$/.test(repository) ||\n      repository.split('/').some(part => part === '.' || part === '..')) return null;
+      typeof repository !== 'string' || !/^[A-Za-z0-9_-][A-Za-z0-9_.-]*\/[A-Za-z0-9_-][A-Za-z0-9_.-]*$/.test(repository) ||
+      repository.split('/').some(part => part === '.' || part === '..')) return null;
   return `https://github.com/${repository}/actions/workflows/${workflow.id}`;
 }
