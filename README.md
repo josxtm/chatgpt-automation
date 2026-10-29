@@ -148,3 +148,9 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Si el último disparo `schedule` terminó correctamente y han pasado **más de diez minutos** sin otro disparo, el Summary muestra un aviso aunque todavía no se alcance el umbral de `stale` (45 minutos).
 - El aviso es informativo: una ejecución verde no acredita regularidad y GitHub puede retrasar u omitir disparos. No se modifica el cron ni se reintenta nada automáticamente.
 - Pruebas cubren el umbral exacto, ausencia de datos y estados que ya tienen un diagnóstico específico. Sin nuevos permisos, servicios externos ni escrituras.
+
+### Ventana temporal de la muestra (v0.8, en revisión)
+
+- El Summary muestra las fechas UTC del primer y último disparo `schedule` dentro de la muestra consultada, incluso si solo hay un disparo.
+- Esta ventana permite interpretar los intervalos observados y evita confundir una muestra corta con una supervisión continua. No modifica el cron, permisos ni servicios externos.
+- Se añaden pruebas de los límites temporales con uno, dos y tres disparos.
