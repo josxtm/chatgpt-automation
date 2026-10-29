@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assessWorkflowState, scheduleDiagnosticHint } from '../src/workflow-state.js';
+import { assessWorkflowState, scheduleDiagnosticHint, cadenceDiagnosticHint } from '../src/workflow-state.js';
 
 const workflow = { path: '.github/workflows/supervisor.yml', state: 'active' };
 
@@ -39,4 +39,14 @@ test('diagnostic guidance distinguishes disabled, absent and stale schedules', (
   assert.match(scheduleDiagnosticHint('active', 'unknown'), /historial schedule no es verificable/);
   assert.match(scheduleDiagnosticHint('active', 'in-progress'), /cola y jobs/);
   assert.equal(scheduleDiagnosticHint('active', 'observed'), null);
+});
+
+test('cadence guidance flags gaps even when the latest scheduled run succeeded', () => {
+  assert.match(cadenceDiagnosticHint({state:'gaps',samples:4,gaps:1}), /huecos de más de diez minutos/);
+  assert.match(cadenceDiagnosticHint({state:'insufficient-data',samples:2,gaps:1}), /huecos de más de diez minutos/);
+  assert.match(cadenceDiagnosticHint({state:'insufficient-data',samples:1,gaps:0}), /pocos disparos/);
+  assert.match(cadenceDiagnosticHint({state:'unknown'}), /no es verificable/);
+  assert.match(cadenceDiagnosticHint(null), /No se pudo evaluar/);
+  assert.equal(cadenceDiagnosticHint({state:'no-large-gaps',samples:12,gaps:0}), null);
+  assert.equal(cadenceDiagnosticHint({state:'never-seen',samples:0}), null);
 });

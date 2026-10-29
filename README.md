@@ -135,3 +135,10 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Si GitHub solo ha registrado **dos** ejecuciones `schedule`, el diagnóstico mantiene `insufficient-data` (no demuestra una cadencia estable), pero **no oculta** el intervalo entre ambas.
 - El Summary muestra la duración del hueco y sus marcas de tiempo UTC cuando supera 10 minutos, incluso con una muestra de solo dos disparos.
 - Con un solo disparo no se inventa ningún intervalo. Se añaden pruebas para ambos casos; sin cambios en cron, permisos ni acciones de escritura.
+
+### Recomendaciones específicas de cadencia (v0.8, en revisión)
+
+- Si hay intervalos observados de más de diez minutos entre disparos `schedule`, el Summary recomienda revisar retrasos u omisiones del planificador, **aunque el último disparo haya terminado correctamente**.
+- Con solo dos disparos se muestra la advertencia sobre huecos reales sin afirmar que la muestra sea suficiente para evaluar la regularidad.
+- Ante una muestra inconsistente se recomienda revisar los metadatos de Actions; con pocos disparos sin huecos se pide continuar observando.
+- Son mensajes informativos de solo lectura, probados con funciones puras. No cambian permisos, cron, ramas, Cloudflare ni la política de fusiones manuales.

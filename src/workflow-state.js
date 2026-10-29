@@ -48,3 +48,21 @@ export function scheduleDiagnosticHint(workflowState, scheduleState) {
   }
   return null;
 }
+
+// Separate cadence guidance: a recent successful run can coexist with large gaps.
+export function cadenceDiagnosticHint(cadence) {
+  if (!cadence || typeof cadence !== 'object') {
+    return 'No se pudo evaluar la cadencia: revisar la respuesta de Actions antes de asumir regularidad.';
+  }
+  if (cadence.state === 'unknown') {
+    return 'La muestra de cadencia no es verificable: revisar metadatos, orden de ejecuciones y respuesta de la API de Actions.';
+  }
+  if (cadence.state === 'gaps' ||
+      (cadence.state === 'insufficient-data' && cadence.gaps > 0)) {
+    return 'Se observaron huecos de más de diez minutos entre disparos schedule: revisar el historial de Actions y posibles retrasos u omisiones del planificador; un CI verde no garantiza el cron.';
+  }
+  if (cadence.state === 'insufficient-data') {
+    return 'Hay pocos disparos schedule para evaluar la cadencia: continuar observando el historial sin dar por fiable la programación.';
+  }
+  return null;
+}

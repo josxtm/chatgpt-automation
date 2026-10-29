@@ -8,7 +8,7 @@ process.on('exit', publish);
 import { validateRepositories, inspectRepository } from '../src/supervisor-core.js';
 import { prSummaryRows } from '../src/summary.js';
 import { assessScheduleHistory, assessScheduleCadence } from '../src/schedule-health.js';
-import { assessWorkflowState, scheduleDiagnosticHint } from '../src/workflow-state.js';
+import { assessWorkflowState, scheduleDiagnosticHint, cadenceDiagnosticHint } from '../src/workflow-state.js';
 
 const config = JSON.parse(readFileSync(new URL('../supervisor.config.json', import.meta.url)));
 const repositories = validateRepositories(config).filter(entry => entry.enabled);
@@ -64,6 +64,8 @@ if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
         report('- Mayor hueco: entre ' + cadence.largestGap.older + ' y ' + cadence.largestGap.newer + ' (UTC).');
       }
     } else if (cadence.reason) report('- Motivo de cadencia: ' + cadence.reason + '.');
+    const cadenceHint = cadenceDiagnosticHint(cadence);
+    if (cadenceHint) report('- Comprobación de cadencia: ' + cadenceHint);
   } catch (error) {
     report('- Estado: **desconocido** (no se pudo consultar el historial de Actions).');
     console.error('Schedule history unavailable:', String(error));
