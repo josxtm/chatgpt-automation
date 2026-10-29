@@ -142,3 +142,9 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Con solo dos disparos se muestra la advertencia sobre huecos reales sin afirmar que la muestra sea suficiente para evaluar la regularidad.
 - Ante una muestra inconsistente se recomienda revisar los metadatos de Actions; con pocos disparos sin huecos se pide continuar observando.
 - Son mensajes informativos de solo lectura, probados con funciones puras. No cambian permisos, cron, ramas, Cloudflare ni la política de fusiones manuales.
+
+### Aviso temprano de silencio del cron (v0.8, en revisión)
+
+- Si el último disparo `schedule` terminó correctamente y han pasado **más de diez minutos** sin otro disparo, el Summary muestra un aviso aunque todavía no se alcance el umbral de `stale` (45 minutos).
+- El aviso es informativo: una ejecución verde no acredita regularidad y GitHub puede retrasar u omitir disparos. No se modifica el cron ni se reintenta nada automáticamente.
+- Pruebas cubren el umbral exacto, ausencia de datos y estados que ya tienen un diagnóstico específico. Sin nuevos permisos, servicios externos ni escrituras.
