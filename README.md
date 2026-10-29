@@ -35,9 +35,9 @@ Los nombres de `required_checks` deben coincidir exactamente con los nombres de 
 - El workflow programado solo utiliza la versión de `main`. Los informes de v0.5 ya están integrados; para verlos hay que abrir una ejecución posterior a esa integración.
 - La ejecución manual verde y la ejecución periódica son comprobaciones distintas: para validar el cron deben aparecer ejecuciones cuyo disparador sea `schedule`.
 
-## v0.6 — Diagnóstico de programación (propuesta de PR)
+## v0.6 — Diagnóstico de programación (integrado en main)
 
-- El cron propuesto es `3-58/5 * * * *`: doce oportunidades por hora, cada cinco minutos, alejadas del minuto 0 (pico de carga habitual).
+- El cron configurado es `3-58/5 * * * *`: doce oportunidades por hora, cada cinco minutos, alejadas del minuto 0 (pico de carga habitual).
 - Se mantiene `workflow_dispatch` para pruebas manuales, el modo **solo lectura** y la política de no fusionar PR automáticamente.
 - `npm test` verifica que el cron conserva exactamente doce intervalos de cinco minutos, incluidos los límites entre horas.
 - **Importante:** GitHub Actions no garantiza el inicio puntual ni la ejecución de todos los cron. Desplazar los minutos es una medida de mitigación, **no una prueba de que la programación esté funcionando**.
@@ -65,10 +65,18 @@ La implementación antigua de Cloudflare Worker y D1 permanece en el historial y
 
 Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en GitHub.
 
-## v0.7 — Diagnóstico del cron en el resumen (PR pendiente)
+## v0.7 — Diagnóstico del cron en el resumen (integrado en main)
 
 - Cada ejecución de **Multiproject Supervisor** consulta en modo lectura el último run cuyo evento sea \`schedule\` mediante la API de GitHub Actions.
 - El informe distingue: \`never-seen\` (ningún disparo programado), \`stale\` (último disparo hace más de 45 minutos), \`in-progress\`, \`recent-not-green\`, \`observed\` y \`unknown\`.
 - El diagnóstico es **informativo** y no modifica repositorios ni fusiona PR; un fallo al consultar el historial no bloquea la inspección de PR.
 - El permiso adicional \`actions: read\` se limita a lectura. Una ejecución manual verde no prueba el cron; un único \`observed\` tampoco demuestra periodicidad sostenida.
 - Si el historial muestra \`never-seen\`, revisar el estado de habilitación del workflow y las restricciones de Actions en GitHub. El cron sigue siendo best-effort.
+
+## v0.8 — Diagnóstico del estado del workflow (PR de revisión)
+
+- El resumen consulta en **solo lectura** el endpoint de GitHub Actions para saber si `Multiproject Supervisor` está habilitado, deshabilitado manualmente, deshabilitado por inactividad, deshabilitado en un fork o eliminado.
+- Un estado `active` **no demuestra** que GitHub haya ejecutado el cron. El historial de disparos `schedule` se sigue mostrando de forma independiente.
+- Si el workflow está deshabilitado, el informe indica que hay que habilitarlo en Actions; **no cambia la configuración ni activa nada automáticamente**.
+- Si GitHub no permite consultar el estado, se muestra `unknown` sin detener la inspección de PR. El token solo necesita `actions: read`, ya configurado.
+- Pruebas unitarias cubren estados activos, deshabilitados, eliminados y metadatos inesperados. No se activan servicios externos ni Cloudflare.
