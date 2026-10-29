@@ -8,7 +8,7 @@ process.on('exit', publish);
 import { validateRepositories, inspectRepository } from '../src/supervisor-core.js';
 import { prSummaryRows } from '../src/summary.js';
 import { assessScheduleHistory, assessScheduleCadence, assessScheduleRevision } from '../src/schedule-health.js';
-import { assessWorkflowState, scheduleDiagnosticHint, cadenceDiagnosticHint, scheduleSilenceHint } from '../src/workflow-state.js';
+import { assessWorkflowState, scheduleDiagnosticHint, cadenceDiagnosticHint, scheduleSilenceHint, workflowActionsLink } from '../src/workflow-state.js';
 
 const config = JSON.parse(readFileSync(new URL('../supervisor.config.json', import.meta.url)));
 const repositories = validateRepositories(config).filter(entry => entry.enabled);
@@ -40,6 +40,9 @@ if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
     const configuration = assessWorkflowState(workflow);
     workflowState = configuration.state;
     report('- Workflow: **' + configuration.state + '** (' + configuration.reason + ').');
+    const actionsLink = workflowActionsLink(workflow, ownRepo);
+    if (actionsLink) report('- [Abrir workflow por ID de GitHub Actions](' + actionsLink + ') (enlace de navegación, no prueba de cron activo).');
+    else report('- Identificador de workflow no disponible: no se puede generar un enlace de Actions verificable por ID.');
   } catch (error) {
     report('- Workflow: **unknown** (no se pudo consultar el estado de habilitación).');
     console.error('Workflow state unavailable:', String(error));

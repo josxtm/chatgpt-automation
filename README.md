@@ -106,3 +106,7 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 3. Tras la fusión **manual**, abrir el flujo `Multiproject Supervisor` y comprobar un `schedule` posterior a la fusión; no sustituir esta comprobación por un `workflow_dispatch`.
 4. Revisar el Summary para distinguir `active`, `never-seen`, `older-revision`, silencio >20 minutos y huecos >15 minutos. Si no hay disparos automáticos, revisar la habilitación del workflow y las políticas del repositorio antes de cambiar el cron.
 5. No considerar resuelta la periodicidad hasta observar varios `schedule` consecutivos; el planificador de GitHub es de mejor esfuerzo.
+
+### Enlace del workflow y errores 404
+
+Si el enlace de Actions basado en `supervisor.yml` devuelve **404** aunque el archivo exista en `main`, no asumir que el cron está deshabilitado. En el Summary de una ejecución del supervisor después de integrar esta mejora se mostrará un enlace alternativo construido con el **ID numérico del workflow**, obtenido en modo lectura de la API de GitHub. Si la API no devuelve un ID válido, se informará sin inventar un enlace. Si también falla el enlace por ID, revisar los permisos y el registro del workflow en Actions; la existencia del archivo y un CI verde no prueban el funcionamiento del cron.

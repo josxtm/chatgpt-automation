@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assessWorkflowState, scheduleDiagnosticHint, cadenceDiagnosticHint, scheduleSilenceHint } from '../src/workflow-state.js';
+import { assessWorkflowState, scheduleDiagnosticHint, cadenceDiagnosticHint, scheduleSilenceHint, workflowActionsLink } from '../src/workflow-state.js';
 
 const workflow = { path: '.github/workflows/supervisor.yml', state: 'active' };
 
@@ -64,4 +64,14 @@ test('recent successful schedule is flagged only after twenty minutes of silence
   }
   assert.equal(scheduleSilenceHint({state:'observed',ageMinutes:NaN}), null);
   assert.equal(scheduleSilenceHint(null), null);
+});
+
+test('workflow ID provides a validated alternative to a filename-based Actions link', () => {
+  assert.equal(workflowActionsLink({id: 12345}, 'josxtm/chatgpt-automation'),
+    'https://github.com/josxtm/chatgpt-automation/actions/workflows/12345');
+  for (const id of [null, 0, -1, 1.5, '123', Number.MAX_SAFE_INTEGER + 1]) {
+    assert.equal(workflowActionsLink({id}, 'josxtm/chatgpt-automation'), null);
+  }
+  assert.equal(workflowActionsLink({id: 123}, '../invalid'), null);
+  assert.equal(workflowActionsLink(null, 'josxtm/chatgpt-automation'), null);
 });

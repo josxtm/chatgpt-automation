@@ -76,3 +76,12 @@ export function scheduleSilenceHint(health, thresholdMinutes = 20) {
   if (health.ageMinutes <= thresholdMinutes) return null;
   return `El último disparo schedule terminó en verde, pero no hay uno más reciente desde hace más de ${thresholdMinutes} minutos: revisar el historial de Actions y posibles retrasos del planificador; un CI verde no confirma la periodicidad.`;
 }
+
+// Use the workflow ID returned by the API when a filename-based Actions URL is unavailable.
+// A link is navigation evidence only; it does not prove the workflow is active.
+export function workflowActionsLink(workflow, repository) {
+  if (!workflow || !Number.isSafeInteger(workflow.id) || workflow.id <= 0 ||
+      typeof repository !== 'string' || !/^[A-Za-z0-9_-][A-Za-z0-9_.-]*\/[A-Za-z0-9_-][A-Za-z0-9_.-]*$/.test(repository) ||
+      repository.split('/').some(part => part === '.' || part === '..')) return null;
+  return `https://github.com/${repository}/actions/workflows/${workflow.id}`;
+}
