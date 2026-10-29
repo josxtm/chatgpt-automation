@@ -72,3 +72,11 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - El diagnóstico es **informativo** y no modifica repositorios ni fusiona PR; un fallo al consultar el historial no bloquea la inspección de PR.
 - El permiso adicional \`actions: read\` se limita a lectura. Una ejecución manual verde no prueba el cron; un único \`observed\` tampoco demuestra periodicidad sostenida.
 - Si el historial muestra \`never-seen\`, revisar el estado de habilitación del workflow y las restricciones de Actions en GitHub. El cron sigue siendo best-effort.
+
+## Propuesta de cadencia cada diez minutos (PR #11)
+
+- El cron propuesto `7-57/10 * * * *` solicita seis ejecuciones por hora, en los minutos 07, 17, 27, 37, 47 y 57 (UTC).
+- `npm test` comprueba el paso de diez minutos, los seis disparos por hora, el desplazamiento respecto al minuto 0 y la continuidad entre horas.
+- **Esta modificación solo entra en funcionamiento cuando el PR se fusiona manualmente en `main`**. Los cron de GitHub Actions se ejecutan desde la rama predeterminada.
+- Para confirmar el funcionamiento real, comprobar en **Actions → Multiproject Supervisor** una nueva ejecución con evento `schedule` posterior a la fusión. Un CI verde o una ejecución `workflow_dispatch` no lo acreditan.
+- GitHub Actions no garantiza puntualidad ni todos los disparos. No se activan Cloudflare, permisos de escritura ni fusiones automáticas.
