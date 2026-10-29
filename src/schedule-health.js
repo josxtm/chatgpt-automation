@@ -1,4 +1,4 @@
-// Advisory only: one recent scheduled run is not proof of five-minute reliability.
+// Advisory only: one recent scheduled run is not proof of ten-minute reliability.
 export function assessScheduleHistory(data, now = Date.now(), maxAgeMinutes = 45) {
   if (!Number.isFinite(now) || !Number.isFinite(maxAgeMinutes) || maxAgeMinutes <= 0) {
     throw new TypeError('Invalid schedule assessment inputs');
@@ -56,9 +56,9 @@ export function assessScheduleHistory(data, now = Date.now(), maxAgeMinutes = 45
 
 /**
  * Advisory sample of the most recent scheduled starts. A short sample without
- * large gaps does not guarantee future five-minute delivery.
+ * large gaps does not guarantee future ten-minute delivery.
  */
-export function assessScheduleCadence(data, now = Date.now(), maxGapMinutes = 10) {
+export function assessScheduleCadence(data, now = Date.now(), maxGapMinutes = 15) {
   if (!Number.isFinite(now) || !Number.isFinite(maxGapMinutes) || maxGapMinutes <= 0) {
     throw new TypeError('Invalid cadence assessment inputs');
   }
