@@ -33,6 +33,7 @@ test('diagnostic guidance distinguishes disabled, absent and stale schedules', (
   assert.match(scheduleDiagnosticHint('active', 'recent-not-green'), /jobs y logs/);
   assert.match(scheduleDiagnosticHint('active', 'stale-not-green'), /antiguo y no terminó en verde/);
   assert.match(scheduleDiagnosticHint('active', 'stale-not-green'), /jobs y logs/);
+  assert.match(scheduleDiagnosticHint('active', 'stale-in-progress'), /cola, concurrencia y jobs/);
   assert.match(scheduleDiagnosticHint('unavailable', 'never-seen'), /eliminado/);
   assert.equal(scheduleDiagnosticHint('active', 'observed'), null);
   assert.equal(scheduleDiagnosticHint('unknown', 'never-seen'), null);
