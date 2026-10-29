@@ -36,6 +36,9 @@ test('unknown scheduled-run statuses fail closed instead of appearing in progres
   for (const status of ['queued', 'in_progress', 'waiting', 'pending', 'requested']) {
     assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,status,conclusion:null}]},now).state, 'in-progress');
   }
+  // Age must not hide an unrecognized status: fail closed even for old runs.
+  assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,status:'mystery'}]},now+60*60000).state, 'unknown');
+  assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,status:'queued',conclusion:null}]},now+60*60000).state, 'stale');
 });
 
 const cadenceRuns = [
