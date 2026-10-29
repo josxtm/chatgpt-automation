@@ -13,3 +13,17 @@ export function assessWorkflowState(data) {
     default: return { state: 'unknown', reason: 'estado no reconocido por el diagnóstico' };
   }
 }
+
+// Read-only guidance. A healthy CI check cannot establish cron delivery.
+export function scheduleDiagnosticHint(workflowState, scheduleState) {
+  if (workflowState === 'disabled') {
+    return 'El workflow está deshabilitado: habilitarlo manualmente en Actions antes de esperar disparos schedule.';
+  }
+  if (workflowState === 'active' && scheduleState === 'never-seen') {
+    return 'Workflow habilitado, pero sin disparos schedule registrados: revisar Actions, rama predeterminada y restricciones de GitHub; no confundir una ejecución manual verde con el cron.';
+  }
+  if (workflowState === 'active' && scheduleState === 'stale') {
+    return 'El último disparo schedule es antiguo: revisar retrasos o interrupciones de GitHub Actions sin asumir una cadencia garantizada.';
+  }
+  return null;
+}
