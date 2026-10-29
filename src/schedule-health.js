@@ -68,8 +68,11 @@ export function assessScheduleCadence(data, now = Date.now(), maxGapMinutes = 10
   }
   const runs = data.workflow_runs;
   if (data.total_count === 0 && runs.length === 0) return { state: 'never-seen', samples: 0 };
-  if (!runs.length || runs.length > 12 || runs.length > data.total_count) {
-    return { state: 'unknown', reason: 'Inconsistent cadence sample' };
+  // The API request uses per_page=12. A short or truncated page must not
+  // be mistaken for a complete, regular sample with no missing triggers.
+  const expectedSamples = Math.min(data.total_count, 12);
+  if (runs.length !== expectedSamples) {
+    return { state: 'unknown', reason: 'Incomplete or inconsistent cadence sample' };
   }
   const ids = new Set();
   let previous = null;
