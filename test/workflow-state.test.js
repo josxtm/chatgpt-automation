@@ -53,7 +53,7 @@ test('cadence guidance flags gaps even when the latest scheduled run succeeded',
 
 test('recent successful schedule is flagged when no newer trigger appears for over ten minutes', () => {
   assert.equal(scheduleSilenceHint({state:'observed',ageMinutes:10}), null);
-  assert.match(scheduleSilenceHint({state:'observed',ageMinutes:11}), /más de diez minutos/);
+  assert.match(scheduleSilenceHint({state:'observed',ageMinutes:11}), /más de 10 minutos/);
   assert.equal(scheduleSilenceHint({state:'observed',ageMinutes:5}), null);
   assert.equal(scheduleSilenceHint({state:'observed',ageMinutes:15}, 15), null);
   assert.match(scheduleSilenceHint({state:'observed',ageMinutes:16}, 15), /más de 15 minutos/);
