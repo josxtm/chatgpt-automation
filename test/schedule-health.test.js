@@ -21,6 +21,20 @@ test('old or failed scheduled runs are flagged', () => {
   assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,conclusion:'failure'}]},now+46*60000).state,'stale-not-green');
   assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,conclusion:null}]},now+46*60000).state,'stale-not-green');
 });
+test('unknown completed-run conclusions fail closed without inventing a failure', () => {
+  for (const conclusion of ['mystery', '', 123, { unexpected: true }]) {
+    const response = assessScheduleHistory({...data, workflow_runs:[{...run, conclusion}]}, now);
+    assert.equal(response.state, 'unknown');
+    assert.match(response.reason, /conclusion/);
+    assert.equal(assessScheduleHistory({...data, workflow_runs:[{...run, conclusion}]}, now+60*60000).state, 'unknown');
+  }
+  for (const conclusion of ['failure', 'cancelled', 'skipped', 'timed_out', 'neutral', 'action_required', 'startup_failure', 'stale']) {
+    assert.equal(assessScheduleHistory({...data, workflow_runs:[{...run, conclusion}]}, now).state, 'recent-not-green');
+  }
+  // An absent conclusion is still not evidence of success.
+  assert.equal(assessScheduleHistory({...data, workflow_runs:[{...run, conclusion:null}]}, now).state, 'recent-not-green');
+});
+
 test('pending scheduled run is not green', () => {
   assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,status:'in_progress',conclusion:null}]},now).state,'in-progress');
 });
