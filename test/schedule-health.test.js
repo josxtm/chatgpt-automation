@@ -56,12 +56,14 @@ const cadenceRuns = [
 
 test('cadence reports observed intervals, never a guarantee', () => {
   assert.deepEqual(assessScheduleCadence({ total_count: 3, workflow_runs: cadenceRuns }, now), {
-    state: 'no-large-gaps', samples: 3, gaps: 0, maxGapMinutes: 5
+    state: 'no-large-gaps', samples: 3, gaps: 0, maxGapMinutes: 5,
+    largestGap: { newer: '2026-10-28T23:55:00.000Z', older: '2026-10-28T23:50:00.000Z' }
   });
   const delayed = [cadenceRuns[0], { ...cadenceRuns[1], created_at: '2026-10-28T23:35:00Z' },
     { ...cadenceRuns[2], created_at: '2026-10-28T23:30:00Z' }];
   assert.deepEqual(assessScheduleCadence({ total_count: 3, workflow_runs: delayed }, now), {
-    state: 'gaps', samples: 3, gaps: 1, maxGapMinutes: 20
+    state: 'gaps', samples: 3, gaps: 1, maxGapMinutes: 20,
+    largestGap: { newer: '2026-10-28T23:55:00.000Z', older: '2026-10-28T23:35:00.000Z' }
   });
 });
 
