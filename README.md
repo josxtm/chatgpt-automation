@@ -80,3 +80,11 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - **Esta modificación solo entra en funcionamiento cuando el PR se fusiona manualmente en `main`**. Los cron de GitHub Actions se ejecutan desde la rama predeterminada.
 - Para confirmar el funcionamiento real, comprobar en **Actions → Multiproject Supervisor** una nueva ejecución con evento `schedule` posterior a la fusión. Un CI verde o una ejecución `workflow_dispatch` no lo acreditan.
 - GitHub Actions no garantiza puntualidad ni todos los disparos. No se activan Cloudflare, permisos de escritura ni fusiones automáticas.
+
+## Verificación operativa del cron de 10 minutos
+
+- El cron activo en `main` es `7-57/10 * * * *` (UTC). GitHub Actions puede retrasar u omitir ejecuciones; no equivale a una garantía de disponibilidad.
+- Abrir [Multiproject Supervisor](https://github.com/josxtm/chatgpt-automation/actions/workflows/supervisor.yml) y filtrar por evento **schedule**. Comprobar que existen ejecuciones posteriores a la última fusión y revisar su **Summary → Supervisor execution evidence**.
+- La presencia de `workflow_dispatch`, `pull_request` o un `Supervisor CI` verde **no demuestra** que el cron funcione.
+- Si no hay nuevos `schedule` durante más de 30 minutos, comprobar que el workflow está habilitado, las políticas de Actions y la actividad del repositorio; consultar [estado de GitHub](https://www.githubstatus.com/). Una ejecución manual sirve para probar el código, no el planificador.
+- No modificar secretos, habilitar Cloudflare ni fusionar PR automáticamente para solucionar retrasos del cron.
