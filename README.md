@@ -96,3 +96,5 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Para el cron vigente de **10 minutos**, marca huecos superiores a **15 minutos** (cinco minutos de tolerancia). Advierte del silencio de un último disparo exitoso al superar **20 minutos** y mantiene `stale` a los **45 minutos**.
 - Los avisos son diagnósticos, no una garantía de periodicidad ni una orden de ejecución. El supervisor permanece **solo lectura**: sin fusiones automáticas, permisos de escritura ni Cloudflare.
 - Este PR parte de `main` actualizado y reemplaza funcionalmente al PR #10, que quedó desfasado tras fusionarse los PR #11, #12 y #13. **No fusionar ambos PR**; revisar y fusionar manualmente solo la versión actualizada tras CI verde.
+
+- Diagnóstico adicional: compara el SHA del último `schedule` con el SHA de la ejecución actual. Si difieren, identifica que la última evidencia programada corresponde a una revisión anterior; **no** lo interpreta por sí solo como un fallo del planificador. Pruebas para SHA ausentes o inválidos.
