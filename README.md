@@ -110,3 +110,9 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Si el último disparo `schedule` tiene más de 45 minutos y sigue `queued`, `in_progress`, `waiting`, `pending` o `requested`, se informa `stale-in-progress` en lugar de ocultar el estado pendiente bajo `stale`.
 - El resumen aconseja revisar la cola, concurrencia y jobs de GitHub Actions. No cancela ni reintenta ejecuciones automáticamente.
 - Se incluyen pruebas para los cinco estados pendientes; se conserva el modo solo lectura y no se modifica el cron.
+
+### Localización temporal del mayor hueco (v0.8, en revisión)
+
+- Cuando se detectan intervalos de más de diez minutos entre disparos `schedule`, el resumen identifica en UTC el inicio y el final del **mayor hueco observado** de la muestra.
+- Es un diagnóstico informativo: no cambia el cron, no garantiza periodicidad, no requiere permisos nuevos y no realiza escrituras.
+- `npm test` verifica las marcas de tiempo del intervalo máximo en muestras regulares y con retrasos.
