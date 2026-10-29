@@ -116,3 +116,9 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Cuando se detectan intervalos de más de diez minutos entre disparos `schedule`, el resumen identifica en UTC el inicio y el final del **mayor hueco observado** de la muestra.
 - Es un diagnóstico informativo: no cambia el cron, no garantiza periodicidad, no requiere permisos nuevos y no realiza escrituras.
 - `npm test` verifica las marcas de tiempo del intervalo máximo en muestras regulares y con retrasos.
+
+### Validación de conclusiones de ejecuciones (v0.8, en revisión)
+
+- Si GitHub devuelve una conclusión desconocida para un disparo `schedule` completado, el diagnóstico informa `unknown` en lugar de afirmar que ha fallado; también se aplica cuando el disparo es antiguo.
+- Las conclusiones reconocidas sin éxito (`failure`, `cancelled`, `skipped`, `timed_out`, `neutral`, `action_required`, `startup_failure`, `stale`) siguen apareciendo como `recent-not-green` o `stale-not-green` según la antigüedad.
+- Una conclusión nula nunca se considera verde. Se añaden pruebas de entradas malformadas; no cambian permisos, cron, acciones de escritura ni Cloudflare.
