@@ -17,6 +17,9 @@ test('one recent scheduled success is observed, not a cadence guarantee', () => 
 test('old or failed scheduled runs are flagged', () => {
   assert.equal(assessScheduleHistory(data,now+46*60000).state, 'stale');
   assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,conclusion:'failure'}]},now).state,'recent-not-green');
+  // An old failed run must preserve the failure signal instead of being labelled only stale.
+  assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,conclusion:'failure'}]},now+46*60000).state,'stale-not-green');
+  assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,conclusion:null}]},now+46*60000).state,'stale-not-green');
 });
 test('pending scheduled run is not green', () => {
   assert.equal(assessScheduleHistory({...data,workflow_runs:[{...run,status:'in_progress',conclusion:null}]},now).state,'in-progress');
