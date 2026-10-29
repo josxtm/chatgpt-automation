@@ -89,3 +89,10 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Si está **active** y aparece **recent-not-green**, el resumen recomienda abrir el run programado y revisar sus jobs y logs.
 - Si el workflow figura como **unavailable** (eliminado), el resumen recomienda comprobar su presencia en la rama predeterminada.
 - La orientación es informativa y se prueba con funciones puras; no añade permisos ni operaciones de escritura.
+
+### Mejora de diagnóstico de cadencia (v0.8, en revisión)
+
+- Se consultan hasta **12 disparos reales `schedule`** en una sola lectura de Actions, sin cambiar el cron ni añadir permisos.
+- El resumen muestra cuántos disparos se observaron, cuántos intervalos superaron **10 minutos** y el mayor intervalo de la muestra.
+- Con menos de tres disparos indica `insufficient-data`; ante datos malformados indica `unknown`. Un historial sin huecos grandes **no demuestra fiabilidad futura**, y la antigüedad del último disparo se informa por separado.
+- Se añaden pruebas para intervalos normales, retrasos, datos insuficientes y metadatos inconsistentes.
