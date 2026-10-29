@@ -89,7 +89,15 @@ export function assessScheduleCadence(data, now = Date.now(), maxGapMinutes = 10
     }
     previous = timestamp;
   }
-  if (runs.length < 3) return { state: 'insufficient-data', samples: runs.length };
+  // Even two real starts can expose a large gap. Keep the sample insufficient
+  // for a cadence verdict, but never discard the observed interval evidence.
+  if (runs.length < 3) return {
+    state: 'insufficient-data',
+    samples: runs.length,
+    gaps,
+    maxGapMinutes: Math.round(maxGap * 10) / 10,
+    largestGap
+  };
   return {
     state: gaps ? 'gaps' : 'no-large-gaps',
     samples: runs.length,

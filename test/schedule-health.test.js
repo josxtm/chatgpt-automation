@@ -95,3 +95,20 @@ test('cadence requires enough scheduled runs and rejects malformed samples', () 
   assert.equal(assessScheduleCadence({ total_count: 2, workflow_runs: cadenceRuns }, now).state, 'unknown');
   assert.equal(assessScheduleCadence({ total_count: 3, workflow_runs: null }, now).state, 'unknown');
 });
+
+test('two scheduled starts expose a real gap without claiming reliable cadence', () => {
+  const sparse = [
+    cadenceRuns[0],
+    { ...cadenceRuns[1], created_at: '2026-10-28T17:35:00Z' }
+  ];
+  assert.deepEqual(assessScheduleCadence({ total_count: 2, workflow_runs: sparse }, now), {
+    state: 'insufficient-data',
+    samples: 2,
+    gaps: 1,
+    maxGapMinutes: 380,
+    largestGap: { newer: '2026-10-28T23:55:00.000Z', older: '2026-10-28T17:35:00.000Z' }
+  });
+  assert.deepEqual(assessScheduleCadence({ total_count: 1, workflow_runs: [cadenceRuns[0]] }, now), {
+    state: 'insufficient-data', samples: 1, gaps: 0, maxGapMinutes: 0, largestGap: null
+  });
+});

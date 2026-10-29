@@ -122,3 +122,9 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Si GitHub devuelve una conclusión desconocida para un disparo `schedule` completado, el diagnóstico informa `unknown` en lugar de afirmar que ha fallado; también se aplica cuando el disparo es antiguo.
 - Las conclusiones reconocidas sin éxito (`failure`, `cancelled`, `skipped`, `timed_out`, `neutral`, `action_required`, `startup_failure`, `stale`) siguen apareciendo como `recent-not-green` o `stale-not-green` según la antigüedad.
 - Una conclusión nula nunca se considera verde. Se añaden pruebas de entradas malformadas; no cambian permisos, cron, acciones de escritura ni Cloudflare.
+
+### Visibilidad de huecos con solo dos disparos (v0.8, en revisión)
+
+- Si GitHub solo ha registrado **dos** ejecuciones `schedule`, el diagnóstico mantiene `insufficient-data` (no demuestra una cadencia estable), pero **no oculta** el intervalo entre ambas.
+- El Summary muestra la duración del hueco y sus marcas de tiempo UTC cuando supera 10 minutos, incluso con una muestra de solo dos disparos.
+- Con un solo disparo no se inventa ningún intervalo. Se añaden pruebas para ambos casos; sin cambios en cron, permisos ni acciones de escritura.

@@ -58,7 +58,7 @@ if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
       report('- [Abrir ejecución](https://github.com/' + ownRepo + '/actions/runs/' + health.runId + ').');
     } else if (health.reason) report('- Motivo: ' + health.reason + '.');
     report('- Cadencia observada (' + (cadence.samples ?? 0) + ' disparos): **' + cadence.state + '**.');
-    if (cadence.state === 'gaps' || cadence.state === 'no-large-gaps') {
+    if (cadence.state === 'gaps' || cadence.state === 'no-large-gaps' || (cadence.state === 'insufficient-data' && cadence.samples >= 2)) {
       report('- Intervalos >10 min: ' + cadence.gaps + '; máximo observado: ' + cadence.maxGapMinutes + ' min.');
       if (cadence.gaps > 0 && cadence.largestGap) {
         report('- Mayor hueco: entre ' + cadence.largestGap.older + ' y ' + cadence.largestGap.newer + ' (UTC).');
