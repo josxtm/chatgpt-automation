@@ -98,3 +98,11 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Este PR parte de `main` actualizado y reemplaza funcionalmente al PR #10, que quedó desfasado tras fusionarse los PR #11, #12 y #13. **No fusionar ambos PR**; revisar y fusionar manualmente solo la versión actualizada tras CI verde.
 
 - Diagnóstico adicional: compara el SHA del último `schedule` con el SHA de la ejecución actual. Si difieren, identifica que la última evidencia programada corresponde a una revisión anterior; **no** lo interpreta por sí solo como un fallo del planificador. Pruebas para SHA ausentes o inválidos.
+
+### Criterio de aceptación antes de activar v0.8
+
+1. Comprobar `Supervisor CI` verde en el commit exacto de la rama candidata.
+2. Revisar que el PR se basa en el `main` vigente y que no se fusiona también el PR #10 (implementación anterior).
+3. Tras la fusión **manual**, abrir el flujo `Multiproject Supervisor` y comprobar un `schedule` posterior a la fusión; no sustituir esta comprobación por un `workflow_dispatch`.
+4. Revisar el Summary para distinguir `active`, `never-seen`, `older-revision`, silencio >20 minutos y huecos >15 minutos. Si no hay disparos automáticos, revisar la habilitación del workflow y las políticas del repositorio antes de cambiar el cron.
+5. No considerar resuelta la periodicidad hasta observar varios `schedule` consecutivos; el planificador de GitHub es de mejor esfuerzo.
