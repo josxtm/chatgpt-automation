@@ -93,7 +93,7 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 ### Mejora de diagnóstico de cadencia (v0.8, en revisión)
 
 - Se consultan hasta **12 disparos reales `schedule`** en una sola lectura de Actions, sin cambiar el cron ni añadir permisos.
-- El resumen muestra cuántos disparos se observaron, cuántos intervalos superaron **10 minutos** y el mayor intervalo de la muestra.
+- El resumen muestra cuántos disparos se observaron, cuántos intervalos superaron **15 minutos** y el mayor intervalo de la muestra.
 - Con menos de tres disparos indica `insufficient-data`; ante datos malformados indica `unknown`. Un historial sin huecos grandes **no demuestra fiabilidad futura**, y la antigüedad del último disparo se informa por separado.
 - Se añaden pruebas para intervalos normales, retrasos, datos insuficientes y metadatos inconsistentes.
 - Los estados de ejecución no reconocidos se clasifican como `unknown` incluso cuando el disparo es antiguo; la antigüedad no debe ocultar metadatos inválidos.
@@ -113,7 +113,7 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 
 ### Localización temporal del mayor hueco (v0.8, en revisión)
 
-- Cuando se detectan intervalos de más de diez minutos entre disparos `schedule`, el resumen identifica en UTC el inicio y el final del **mayor hueco observado** de la muestra.
+- Cuando se detectan intervalos de más de quince minutos entre disparos `schedule`, el resumen identifica en UTC el inicio y el final del **mayor hueco observado** de la muestra.
 - Es un diagnóstico informativo: no cambia el cron, no garantiza periodicidad, no requiere permisos nuevos y no realiza escrituras.
 - `npm test` verifica las marcas de tiempo del intervalo máximo en muestras regulares y con retrasos.
 
@@ -133,19 +133,19 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 ### Visibilidad de huecos con solo dos disparos (v0.8, en revisión)
 
 - Si GitHub solo ha registrado **dos** ejecuciones `schedule`, el diagnóstico mantiene `insufficient-data` (no demuestra una cadencia estable), pero **no oculta** el intervalo entre ambas.
-- El Summary muestra la duración del hueco y sus marcas de tiempo UTC cuando supera 10 minutos, incluso con una muestra de solo dos disparos.
+- El Summary muestra la duración del hueco y sus marcas de tiempo UTC cuando supera 15 minutos, incluso con una muestra de solo dos disparos.
 - Con un solo disparo no se inventa ningún intervalo. Se añaden pruebas para ambos casos; sin cambios en cron, permisos ni acciones de escritura.
 
 ### Recomendaciones específicas de cadencia (v0.8, en revisión)
 
-- Si hay intervalos observados de más de diez minutos entre disparos `schedule`, el Summary recomienda revisar retrasos u omisiones del planificador, **aunque el último disparo haya terminado correctamente**.
+- Si hay intervalos observados de más de quince minutos entre disparos `schedule`, el Summary recomienda revisar retrasos u omisiones del planificador, **aunque el último disparo haya terminado correctamente**.
 - Con solo dos disparos se muestra la advertencia sobre huecos reales sin afirmar que la muestra sea suficiente para evaluar la regularidad.
 - Ante una muestra inconsistente se recomienda revisar los metadatos de Actions; con pocos disparos sin huecos se pide continuar observando.
 - Son mensajes informativos de solo lectura, probados con funciones puras. No cambian permisos, cron, ramas, Cloudflare ni la política de fusiones manuales.
 
 ### Aviso temprano de silencio del cron (v0.8, en revisión)
 
-- Si el último disparo `schedule` terminó correctamente y han pasado **más de diez minutos** sin otro disparo, el Summary muestra un aviso aunque todavía no se alcance el umbral de `stale` (45 minutos).
+- Si el último disparo `schedule` terminó correctamente y han pasado **más de veinte minutos** sin otro disparo, el Summary muestra un aviso aunque todavía no se alcance el umbral de `stale` (45 minutos).
 - El aviso es informativo: una ejecución verde no acredita regularidad y GitHub puede retrasar u omitir disparos. No se modifica el cron ni se reintenta nada automáticamente.
 - Pruebas cubren el umbral exacto, ausencia de datos y estados que ya tienen un diagnóstico específico. Sin nuevos permisos, servicios externos ni escrituras.
 
@@ -158,7 +158,7 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 ### Validación de metadatos pendientes y umbrales (v0.8, en revisión)
 
 - Si GitHub marca un disparo `schedule` como pendiente o en ejecución pero le asigna una conclusión final, el supervisor muestra `unknown`: esos metadatos contradictorios no se interpretan como un estado normal.
-- La advertencia de ausencia de nuevos disparos muestra el umbral realmente utilizado, incluso si se configura uno distinto de diez minutos; las pruebas cubren ambos casos.
+- La advertencia de ausencia de nuevos disparos muestra el umbral realmente utilizado, incluso si se configura uno distinto de veinte minutos; las pruebas cubren ambos casos.
 - Son cambios de diagnóstico de solo lectura: no alteran el cron, los permisos, los repositorios supervisados ni Cloudflare.
 
 ### Protección frente a muestras incompletas de Actions (v0.8, en revisión)
@@ -178,3 +178,11 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - Cuando se detecta un hueco entre dos ejecuciones `schedule`, el Summary enlaza directamente la ejecución anterior y la posterior, además de mostrar sus fechas UTC. Así se pueden revisar los jobs y los registros de ambos extremos sin buscar manualmente sus identificadores.
 - Los enlaces se construyen solo con identificadores numéricos validados de la respuesta de GitHub; no hay cambios de permisos, cron, Cloudflare ni acciones de escritura.
 - Las pruebas verifican que los identificadores corresponden a las dos ejecuciones del intervalo máximo, también cuando la muestra contiene solo dos disparos.
+
+### Tolerancia para la programación vigente de diez minutos (v0.8, en revisión)
+
+- El cron vigente en `main` es `7-57/10 * * * *` (seis oportunidades por hora). GitHub puede introducir retrasos y no garantiza cada ejecución.
+- La cadencia marca huecos solo cuando el intervalo observado supera **15 minutos**: diez minutos previstos y cinco de tolerancia para evitar falsas alarmas por retrasos pequeños. Un hueco de 15 minutos exactos no se marca; uno de 16 sí.
+- El aviso temprano de ausencia de un disparo exitoso se muestra tras **20 minutos** sin nuevos `schedule`. El estado `stale` permanece en 45 minutos.
+- Las pruebas verifican los límites de 10, 15, 16, 20 y 21 minutos. El diagnóstico continúa siendo informativo y de solo lectura.
+- **Antes de fusionar este PR antiguo**, resolver las diferencias con `main` (cron de 10 minutos, evidencia de disparador y guía operativa ya integrados). No sustituir el cron actual por el de cinco minutos de la documentación histórica.
