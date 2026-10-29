@@ -66,3 +66,13 @@ export function cadenceDiagnosticHint(cadence) {
   }
   return null;
 }
+
+// A successful last run can still be too old for a five-minute schedule.
+// This is an observation, not proof of a GitHub scheduling failure.
+export function scheduleSilenceHint(health, thresholdMinutes = 10) {
+  if (!health || health.state !== 'observed' ||
+      !Number.isFinite(health.ageMinutes) || health.ageMinutes < 0 ||
+      !Number.isFinite(thresholdMinutes) || thresholdMinutes <= 0) return null;
+  if (health.ageMinutes <= thresholdMinutes) return null;
+  return 'El último disparo schedule terminó en verde, pero no hay uno más reciente desde hace más de diez minutos: revisar el historial de Actions y posibles retrasos del planificador; un CI verde no confirma la periodicidad.';
+}
