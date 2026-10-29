@@ -65,7 +65,7 @@ if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
     }
     if (cadence.limited) report('- Muestra limitada: ' + cadence.samples + ' de ' + cadence.totalRuns + ' disparos registrados; no se evalúan intervalos anteriores.');
     if (cadence.state === 'gaps' || cadence.state === 'no-large-gaps' || (cadence.state === 'insufficient-data' && cadence.samples >= 2)) {
-      report('- Intervalos >10 min: ' + cadence.gaps + '; máximo observado: ' + cadence.maxGapMinutes + ' min.');
+      report('- Intervalos >15 min: ' + cadence.gaps + '; máximo observado: ' + cadence.maxGapMinutes + ' min.');
       if (cadence.gaps > 0 && cadence.largestGap) {
         report('- Mayor hueco: entre ' + cadence.largestGap.older + ' y ' + cadence.largestGap.newer + ' (UTC).');
         report('- Investigar extremos del hueco: [ejecución anterior](https://github.com/' + ownRepo + '/actions/runs/' + cadence.largestGap.olderRunId + ') y [ejecución posterior](https://github.com/' + ownRepo + '/actions/runs/' + cadence.largestGap.newerRunId + ').');
@@ -80,7 +80,7 @@ if (!/^[\w.-]+\/[\w.-]+$/.test(ownRepo || '')) {
   const hint = scheduleDiagnosticHint(workflowState, scheduleState);
   if (hint) report('- Siguiente comprobación: ' + hint);
 }
-report('- Una ejecución reciente no garantiza una cadencia exacta de cinco minutos.');
+report('- Una ejecución reciente no garantiza una cadencia exacta de diez minutos.');
 report('');
 
 let errors = 0;
