@@ -59,7 +59,7 @@ export function cadenceDiagnosticHint(cadence) {
   }
   if (cadence.state === 'gaps' ||
       (cadence.state === 'insufficient-data' && cadence.gaps > 0)) {
-    return 'Se observaron huecos de más de diez minutos entre disparos schedule: revisar el historial de Actions y posibles retrasos u omisiones del planificador; un CI verde no garantiza el cron.';
+    return 'Se observaron huecos de más de quince minutos entre disparos schedule: revisar el historial de Actions y posibles retrasos u omisiones del planificador; un CI verde no garantiza el cron.';
   }
   if (cadence.state === 'insufficient-data') {
     return 'Hay pocos disparos schedule para evaluar la cadencia: continuar observando el historial sin dar por fiable la programación.';
@@ -67,9 +67,9 @@ export function cadenceDiagnosticHint(cadence) {
   return null;
 }
 
-// A successful last run can still be too old for a five-minute schedule.
+// A successful last run can still be too old for a ten-minute schedule.
 // This is an observation, not proof of a GitHub scheduling failure.
-export function scheduleSilenceHint(health, thresholdMinutes = 10) {
+export function scheduleSilenceHint(health, thresholdMinutes = 20) {
   if (!health || health.state !== 'observed' ||
       !Number.isFinite(health.ageMinutes) || health.ageMinutes < 0 ||
       !Number.isFinite(thresholdMinutes) || thresholdMinutes <= 0) return null;
