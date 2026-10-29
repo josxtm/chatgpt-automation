@@ -104,3 +104,9 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - El resumen recomienda inspeccionar los **jobs y logs** de la ejecución fallida, además de revisar posibles retrasos del planificador.
 - Un disparo reciente no satisfactorio sigue figurando como `recent-not-green`; un disparo antiguo satisfactorio sigue figurando como `stale`. Son diagnósticos informativos, sin escrituras ni cambios de cron.
 - Las pruebas cubren fallos antiguos y conclusiones ausentes para evitar falsos positivos.
+
+### Diagnóstico de ejecuciones pendientes antiguas (v0.8, en revisión)
+
+- Si el último disparo `schedule` tiene más de 45 minutos y sigue `queued`, `in_progress`, `waiting`, `pending` o `requested`, se informa `stale-in-progress` en lugar de ocultar el estado pendiente bajo `stale`.
+- El resumen aconseja revisar la cola, concurrencia y jobs de GitHub Actions. No cancela ni reintenta ejecuciones automáticamente.
+- Se incluyen pruebas para los cinco estados pendientes; se conserva el modo solo lectura y no se modifica el cron.
