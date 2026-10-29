@@ -21,12 +21,13 @@ export function assessScheduleHistory(data, now = Date.now(), maxAgeMinutes = 45
   }
   const ageMinutes = Math.floor((now - timestamp) / 60000);
   const details = { lastRunAt: new Date(timestamp).toISOString(), ageMinutes, runId: run.id };
-  if (ageMinutes > maxAgeMinutes) return { state: 'stale', ...details };
-  // Unknown API statuses must not be mistaken for a running workflow.
+  // Validate status before age: an unknown status must never be labelled stale
+  // (or otherwise treated as a recognized scheduled-run state).
   const pendingStatuses = new Set(['queued', 'in_progress', 'waiting', 'pending', 'requested']);
   if (run.status !== 'completed' && !pendingStatuses.has(run.status)) {
     return { state: 'unknown', reason: 'Unrecognized scheduled-run status' };
   }
+  if (ageMinutes > maxAgeMinutes) return { state: 'stale', ...details };
   if (run.status === 'completed' && run.conclusion !== 'success') {
     return { state: 'recent-not-green', ...details };
   }
