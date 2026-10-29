@@ -96,3 +96,4 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - El resumen muestra cuántos disparos se observaron, cuántos intervalos superaron **10 minutos** y el mayor intervalo de la muestra.
 - Con menos de tres disparos indica `insufficient-data`; ante datos malformados indica `unknown`. Un historial sin huecos grandes **no demuestra fiabilidad futura**, y la antigüedad del último disparo se informa por separado.
 - Se añaden pruebas para intervalos normales, retrasos, datos insuficientes y metadatos inconsistentes.
+- Los estados de ejecución no reconocidos se clasifican como `unknown` incluso cuando el disparo es antiguo; la antigüedad no debe ocultar metadatos inválidos.
