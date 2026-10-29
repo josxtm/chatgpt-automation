@@ -53,7 +53,7 @@ Los nombres de `required_checks` deben coincidir exactamente con los nombres de 
 
 - No incluir tokens ni secretos en el repositorio.
 - Un check ausente, ambiguo o duplicado **nunca** se considera verde.
-- El cron de GitHub no garantiza ejecución exacta cada cinco minutos.
+- El cron de GitHub no garantiza ejecución exacta cada diez minutos.
 - No se realizan fusiones automáticas.
 - Antes de permitir acciones de escritura: verificar protección de ramas, identidad de commits, permisos y límites de reintentos.
 
@@ -65,7 +65,7 @@ La implementación antigua de Cloudflare Worker y D1 permanece en el historial y
 
 Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en GitHub.
 
-## v0.7 — Diagnóstico del cron en el resumen (PR pendiente)
+## v0.7 — Diagnóstico del cron en el resumen (integrado en main)
 
 - Cada ejecución de **Multiproject Supervisor** consulta en modo lectura el último run cuyo evento sea \`schedule\` mediante la API de GitHub Actions.
 - El informe distingue: \`never-seen\` (ningún disparo programado), \`stale\` (último disparo hace más de 45 minutos), \`in-progress\`, \`recent-not-green\`, \`observed\` y \`unknown\`.
@@ -73,9 +73,9 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - El permiso adicional \`actions: read\` se limita a lectura. Una ejecución manual verde no prueba el cron; un único \`observed\` tampoco demuestra periodicidad sostenida.
 - Si el historial muestra \`never-seen\`, revisar el estado de habilitación del workflow y las restricciones de Actions en GitHub. El cron sigue siendo best-effort.
 
-## Propuesta de cadencia cada diez minutos (PR #11)
+## Cadencia cada diez minutos (PR #11 integrado)
 
-- El cron propuesto `7-57/10 * * * *` solicita seis ejecuciones por hora, en los minutos 07, 17, 27, 37, 47 y 57 (UTC).
+- El cron vigente `7-57/10 * * * *` solicita seis ejecuciones por hora, en los minutos 07, 17, 27, 37, 47 y 57 (UTC).
 - `npm test` comprueba el paso de diez minutos, los seis disparos por hora, el desplazamiento respecto al minuto 0 y la continuidad entre horas.
 - **Esta modificación solo entra en funcionamiento cuando el PR se fusiona manualmente en `main`**. Los cron de GitHub Actions se ejecutan desde la rama predeterminada.
 - Para confirmar el funcionamiento real, comprobar en **Actions → Multiproject Supervisor** una nueva ejecución con evento `schedule` posterior a la fusión. Un CI verde o una ejecución `workflow_dispatch` no lo acreditan.
@@ -88,3 +88,11 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - La presencia de `workflow_dispatch`, `pull_request` o un `Supervisor CI` verde **no demuestra** que el cron funcione.
 - Si no hay nuevos `schedule` durante más de 30 minutos, comprobar que el workflow está habilitado, las políticas de Actions y la actividad del repositorio; consultar [estado de GitHub](https://www.githubstatus.com/). Una ejecución manual sirve para probar el código, no el planificador.
 - No modificar secretos, habilitar Cloudflare ni fusionar PR automáticamente para solucionar retrasos del cron.
+
+## v0.8 — Diagnóstico reforzado del cron (PR de revisión)
+
+- Consulta en **solo lectura** si el workflow está habilitado y hasta 12 ejecuciones reales con evento `schedule`; distingue `never-seen`, `observed`, `stale`, `recent-not-green`, `stale-not-green`, `in-progress`, `stale-in-progress` y `unknown`.
+- Muestra la ventana UTC, el mayor intervalo observado y enlaces a las dos ejecuciones que delimitan el hueco. Rechaza muestras incompletas o metadatos contradictorios en lugar de declarar el cron sano.
+- Para el cron vigente de **10 minutos**, marca huecos superiores a **15 minutos** (cinco minutos de tolerancia). Advierte del silencio de un último disparo exitoso al superar **20 minutos** y mantiene `stale` a los **45 minutos**.
+- Los avisos son diagnósticos, no una garantía de periodicidad ni una orden de ejecución. El supervisor permanece **solo lectura**: sin fusiones automáticas, permisos de escritura ni Cloudflare.
+- Este PR parte de `main` actualizado y reemplaza funcionalmente al PR #10, que quedó desfasado tras fusionarse los PR #11, #12 y #13. **No fusionar ambos PR**; revisar y fusionar manualmente solo la versión actualizada tras CI verde.
