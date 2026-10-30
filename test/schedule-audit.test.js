@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { auditScheduleWindow, auditExitCode } from '../src/schedule-audit.js';
+import { auditScheduleWindow, auditExitCode, validateScheduleHistoryPage } from '../src/schedule-audit.js';
 
 const start = '2026-10-29T00:00:00Z';
 const end = '2026-10-30T00:00:00Z';
@@ -134,4 +134,22 @@ test('audit CLI success requires closed, complete, gap-free evidence', () => {
     { ...healthy, boundaryGaps: 1 },
     null
   ]) assert.equal(auditExitCode(invalid), 1);
+});
+
+
+test('schedule audit pagination rejects truncated pages and changing totals', () => {
+  const page = (total_count, count) => ({ total_count, workflow_runs: Array(count).fill({}) });
+  assert.deepEqual(validateScheduleHistoryPage(page(0, 0), 0), { totalCount: 0, complete: true });
+  assert.deepEqual(validateScheduleHistoryPage(page(2, 2), 0), { totalCount: 2, complete: true });
+  assert.deepEqual(validateScheduleHistoryPage(page(200, 100), 0), { totalCount: 200, complete: false });
+  assert.deepEqual(validateScheduleHistoryPage(page(200, 100), 100, 200), { totalCount: 200, complete: true });
+  for (const [data, seen, total] of [
+    [page(2, 1), 0, null],
+    [page(200, 1), 100, 200],
+    [page(1, 2), 0, null],
+    [page(200, 101), 0, null],
+    [page(201, 100), 100, 200],
+    [page(-1, 0), 0, null],
+    [{ total_count: 2, workflow_runs: null }, 0, null]
+  ]) assert.throws(() => validateScheduleHistoryPage(data, seen, total), Error);
 });
