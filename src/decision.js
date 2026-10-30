@@ -10,7 +10,9 @@ export function decide({draft,checks,expected}) {
     const c = matches[0];
     if (c.status !== 'completed') {
       if (c.status !== 'queued' && c.status !== 'in_progress' && c.status !== 'pending' && c.status !== 'waiting' && c.status !== 'requested') return 'unknown';
-      // A pending check cannot already have a final conclusion. Fail closed.\n      if (c.conclusion != null) return 'unknown';\n      pending = true;
+      // A pending check cannot already have a final conclusion. Fail closed.
+      if (c.conclusion != null) return 'unknown';
+      pending = true;
       continue;
     }
     if (c.conclusion === 'failure' || c.conclusion === 'timed_out' || c.conclusion === 'action_required' || c.conclusion === 'cancelled' || c.conclusion === 'startup_failure' || c.conclusion === 'stale') return 'red';
