@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { auditScheduleWindow } from '../src/schedule-audit.js';
+import { auditScheduleWindow, auditExitCode } from '../src/schedule-audit.js';
 
 const start = '2026-10-29T00:00:00Z';
 const end = '2026-10-30T00:00:00Z';
@@ -112,4 +112,26 @@ test('boundary threshold is strictly greater than 15 minutes', () => {
   const delayed = auditScheduleWindow(sample(16), hourly);
   assert.equal(delayed.state, 'boundary-gaps');
   assert.equal(delayed.boundaryGaps, 1);
+});
+
+test('audit CLI success requires closed, complete, gap-free evidence', () => {
+  const regular = Array.from({ length: 144 }, (_, index) =>
+    run(144 - index, new Date(Date.parse(end) - (7 + index * 10) * 60000).toISOString()));
+  const healthy = auditScheduleWindow(regular, options);
+  assert.equal(auditExitCode(healthy), 0);
+  const unfinished = auditScheduleWindow(regular, { ...options, now: Date.parse('2026-10-29T23:55:00Z') });
+  assert.equal(unfinished.state, 'window-open');
+  assert.equal(auditExitCode(unfinished), 1);
+  for (const invalid of [
+    auditScheduleWindow(regular, { ...options, historyComplete: false }),
+    auditScheduleWindow(runs, options),
+    auditScheduleWindow([], options),
+    auditScheduleWindow(null, options),
+    { ...healthy, state: 'boundary-gaps' },
+    { ...healthy, historyComplete: 'true' },
+    { ...healthy, samples: 1 },
+    { ...healthy, gaps: 1 },
+    { ...healthy, boundaryGaps: 1 },
+    null
+  ]) assert.equal(auditExitCode(invalid), 1);
 });
