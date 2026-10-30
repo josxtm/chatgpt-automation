@@ -37,7 +37,14 @@ test('GitHub getter aborts stalled requests and reports timeout', async () => {
       signal.addEventListener('abort', () => reject(signal.reason), { once: true });
     })
   });
-  await assert.rejects(get('/repos/owner/repo/pulls'), /GitHub API timeout after 15ms/);
+  // AbortSignal.timeout uses an unref'd timer; keep the event loop alive
+  // while the mocked fetch waits, as a real HTTP socket would.
+  const keepAlive = setTimeout(() => {}, 200);
+  try {
+    await assert.rejects(get('/repos/owner/repo/pulls'), /GitHub API timeout after 15ms/);
+  } finally {
+    clearTimeout(keepAlive);
+  }
 });
 
 test('GitHub getter rejects invalid configuration and paths', async () => {
