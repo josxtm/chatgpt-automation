@@ -1,0 +1,69 @@
+// Read-only, bounded 24-hour audit of actual GitHub schedule starts.
+// No manual dispatches, CI runs, or inferred cron ticks count as evidence.
+export function auditScheduleWindow(runs, options = {}) {
+  const { start, end, now = Date.now(), historyComplete = false, maxGapMinutes = 15 } = options;
+  const from = Date.parse(start);
+  const to = Date.parse(end);
+  if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from ||
+      !Number.isFinite(now) || !Number.isFinite(maxGapMinutes) || maxGapMinutes <= 0) {
+    throw new TypeError('Invalid audit window or threshold');
+  }
+  if (!Array.isArray(runs)) return { state: 'unknown', reason: 'Missing schedule history' };
+
+  const seen = new Set();
+  const selected = [];
+  let previous = Infinity;
+  for (const run of runs) {
+    const timestamp = Date.parse(run?.created_at);
+    if (run?.event !== 'schedule' || !Number.isSafeInteger(run?.id) || run.id <= 0 ||
+        seen.has(run.id) || !Number.isFinite(timestamp) || timestamp > now ||
+        timestamp > previous) {
+      return { state: 'unknown', reason: 'Invalid, duplicate or unordered schedule history' };
+    }
+    seen.add(run.id);
+    previous = timestamp;
+    if (timestamp >= from && timestamp < to) selected.push({ id: run.id, timestamp });
+  }
+
+  let gaps = 0;
+  let maxGap = null;
+  let largestGap = null;
+  const intervalsMinutes = [];
+  for (let i = 1; i < selected.length; i++) {
+    const newer = selected[i - 1];
+    const older = selected[i];
+    const minutes = (newer.timestamp - older.timestamp) / 60000;
+    intervalsMinutes.push(Math.round(minutes * 10) / 10);
+    if (minutes > maxGapMinutes) gaps++;
+    if (maxGap === null || minutes > maxGap) {
+      maxGap = minutes;
+      largestGap = {
+        older: new Date(older.timestamp).toISOString(),
+        newer: new Date(newer.timestamp).toISOString(),
+        olderRunId: older.id,
+        newerRunId: newer.id
+      };
+    }
+  }
+
+  const windowClosed = now >= to;
+  const state = !windowClosed ? 'window-open' :
+    !historyComplete ? 'incomplete-history' :
+    selected.length < 2 ? 'insufficient-data' :
+    gaps ? 'gaps' : 'no-large-gaps';
+  const round = value => Math.round(value * 10) / 10;
+  return {
+    state,
+    start: new Date(from).toISOString(),
+    end: new Date(to).toISOString(),
+    historyComplete: Boolean(historyComplete),
+    samples: selected.length,
+    intervalsMinutes,
+    gaps,
+    maxGapMinutes: maxGap === null ? null : round(maxGap),
+    largestGap,
+    // Boundary silences are separate from intervals between observed starts.
+    leadingSilenceMinutes: selected.length ? round((selected.at(-1).timestamp - from) / 60000) : null,
+    trailingSilenceMinutes: selected.length ? round((Math.min(to, now) - selected[0].timestamp) / 60000) : null
+  };
+}
