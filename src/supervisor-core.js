@@ -37,8 +37,14 @@ export async function inspectRepository(entry, get) {
   const observations = [];
   for (const pr of prs) {
     if (!pr?.head?.sha || !Number.isInteger(pr.number)) throw new Error('Malformed pull request');
+    // Draft PRs cannot be green; avoid an unnecessary check-runs API request.
+    // This also prevents a transient checks outage from hiding draft PRs.
+    if (pr.draft === true) {
+      observations.push({repo, pr:pr.number, sha:pr.head.sha, state:'draft'});
+      continue;
+    }
     const checks = await fetchPages(get, '/repos/' + repo + '/commits/' + pr.head.sha + '/check-runs', 'check_runs');
-    observations.push({repo, pr:pr.number, sha:pr.head.sha, state:decide({draft:pr.draft,checks,expected:entry.required_checks})});
+    observations.push({repo, pr:pr.number, sha:pr.head.sha, state:decide({draft:false,checks,expected:entry.required_checks})});
   }
   return observations;
 }
