@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { auditScheduleWindow, auditExitCode, validateScheduleHistoryPage } from '../src/schedule-audit.js';
+import { auditScheduleWindow, auditExitCode, validateScheduleHistoryPage, is24HourUtcWindow } from '../src/schedule-audit.js';
 
 const start = '2026-10-29T00:00:00Z';
 const end = '2026-10-30T00:00:00Z';
@@ -152,4 +152,17 @@ test('schedule audit pagination rejects truncated pages and changing totals', ()
     [page(-1, 0), 0, null],
     [{ total_count: 2, workflow_runs: null }, 0, null]
   ]) assert.throws(() => validateScheduleHistoryPage(data, seen, total), Error);
+});
+
+
+test('CLI 24-hour window validation rejects partial, shifted or malformed UTC windows', () => {
+  assert.equal(is24HourUtcWindow('2026-10-29T23:21:34Z', '2026-10-30T23:21:34Z'), true);
+  for (const [from, to] of [
+    ['2026-10-29T23:21:34Z', '2026-10-30T23:21:33Z'],
+    ['2026-10-29T23:21:34Z', '2026-10-31T00:21:34Z'],
+    ['2026-10-29T23:21:34+00:00', '2026-10-30T23:21:34+00:00'],
+    ['2026-02-30T00:00:00Z', '2026-03-03T00:00:00Z'],
+    ['2026-10-29T23:21:34Z', 'not-a-date'],
+    [undefined, '2026-10-30T23:21:34Z']
+  ]) assert.equal(is24HourUtcWindow(from, to), false);
 });

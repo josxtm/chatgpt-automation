@@ -1,13 +1,13 @@
 // Usage: GH_TOKEN=... node scripts/audit-schedule.mjs START_UTC END_UTC
 // A read-only report; this script does not dispatch workflows or modify PRs.
 import { appendFileSync } from 'node:fs';
-import { auditScheduleWindow, auditExitCode, validateScheduleHistoryPage } from '../src/schedule-audit.js';
+import { auditScheduleWindow, auditExitCode, validateScheduleHistoryPage, is24HourUtcWindow } from '../src/schedule-audit.js';
 
 const [start, end] = process.argv.slice(2);
 const repo = process.env.GITHUB_REPOSITORY || 'josxtm/chatgpt-automation';
 const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
-if (!start || !end || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo) || !token) {
-  console.error('Usage: GH_TOKEN=... node scripts/audit-schedule.mjs START_UTC END_UTC');
+if (!is24HourUtcWindow(start, end) || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo) || !token) {
+  console.error('Usage: GH_TOKEN=... node scripts/audit-schedule.mjs START_UTC END_UTC (exactly 24h, YYYY-MM-DDTHH:mm:ssZ)');
   process.exit(2);
 }
 
@@ -19,6 +19,7 @@ async function loadScheduleHistory() {
   for (let page = 1; page <= 20; page++) {
     const path = '/repos/' + repo + '/actions/workflows/supervisor.yml/runs?event=schedule&per_page=100&page=' + page;
     const response = await fetch('https://api.github.com' + path, {
+      signal: AbortSignal.timeout(15000),
       headers: {
         Authorization: 'Bearer ' + token,
         Accept: 'application/vnd.github+json',

@@ -1,3 +1,17 @@
+// The command-line audit must not silently inspect a shorter or shifted window.
+// Accept only canonical UTC seconds and exactly 24 elapsed hours.
+export function is24HourUtcWindow(start, end) {
+  const utc = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+  if (typeof start !== 'string' || typeof end !== 'string' ||
+      !utc.test(start) || !utc.test(end)) return false;
+  const from = Date.parse(start);
+  const to = Date.parse(end);
+  return Number.isFinite(from) && Number.isFinite(to) &&
+    new Date(from).toISOString() === start.replace('Z', '.000Z') &&
+    new Date(to).toISOString() === end.replace('Z', '.000Z') &&
+    to - from === 24 * 60 * 60 * 1000;
+}
+
 // Read-only, bounded 24-hour audit of actual GitHub schedule starts.
 // No manual dispatches, CI runs, or inferred cron ticks count as evidence.
 export function auditScheduleWindow(runs, options = {}) {
