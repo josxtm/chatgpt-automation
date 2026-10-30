@@ -143,12 +143,14 @@ export function assessScheduleRevision(data, currentSha) {
     return { state: 'unknown', reason: 'Malformed scheduled-run history' };
   }
   if (data.total_count === 0 && data.workflow_runs.length === 0) return { state: 'never-seen' };
-  if (data.total_count === 0 || data.workflow_runs.length < 1) {
-    return { state: 'unknown', reason: 'Inconsistent scheduled-run history' };
+  // The endpoint returns at most 12 rows. Do not identify a revision from
+  // a truncated or contradictory page: it could omit newer schedule starts.
+  if (data.workflow_runs.length !== Math.min(data.total_count, 12)) {
+    return { state: 'unknown', reason: 'Incomplete or inconsistent scheduled-run revision history' };
   }
   const latest = data.workflow_runs[0];
   if (latest?.event !== 'schedule' || !Number.isSafeInteger(latest.id) || latest.id <= 0 ||
-      !validSha(latest.head_sha)) {
+      !Number.isFinite(Date.parse(latest.created_at)) || !validSha(latest.head_sha)) {
     return { state: 'unknown', reason: 'Invalid scheduled-run revision metadata' };
   }
   return {

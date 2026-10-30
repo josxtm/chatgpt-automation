@@ -3,6 +3,10 @@ on:
   schedule:
     - cron: '3-53/10 * * * *'
   workflow_dispatch:
+  workflow_call:
+    secrets:
+      SUPERVISOR_GITHUB_TOKEN:
+        required: false
 permissions:
   contents: read
   pull-requests: read
@@ -15,6 +19,7 @@ jobs:
   inspect:
     runs-on: ubuntu-latest
     timeout-minutes: 4
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Record trigger evidence
         env:
@@ -36,10 +41,18 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check successful inspection receipts
+        id: gate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/recovery-gate.mjs
       - name: Inspect configured repositories (read-only)
+        if: steps.gate.outputs.inspect == 'true'
         env:
           GH_TOKEN: ${{ secrets.SUPERVISOR_GITHUB_TOKEN || github.token }}
         run: node scripts/supervise.mjs

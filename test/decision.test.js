@@ -15,3 +15,18 @@ test('cancelled check red',()=>assert.equal(decide({draft:false,checks:check('co
 test('mixed pending and failure red',()=>assert.equal(decide({draft:false,checks:[{name:'verify',status:'in_progress',conclusion:null},{name:'lint',status:'completed',conclusion:'failure'}],expected:['verify','lint']}),'red'));
 test('invalid checks unknown',()=>assert.equal(decide({draft:false,checks:null,expected}),'unknown'));
 test('duplicate expected checks unknown',()=>assert.equal(decide({draft:false,checks:check('completed','success'),expected:['verify','verify']}),'unknown'));
+
+test('pending checks with a final conclusion fail closed', () => {
+  for (const status of ['queued', 'in_progress', 'pending', 'waiting', 'requested']) {
+    for (const conclusion of ['success', 'failure', 'cancelled', '']) {
+      assert.equal(decide({draft:false,checks:check(status,conclusion),expected}), 'unknown');
+    }
+    assert.equal(decide({draft:false,checks:check(status,null),expected}), 'pending');
+  }
+});
+test('terminal startup_failure and stale conclusions are red', () => {
+  for (const conclusion of ['startup_failure', 'stale']) {
+    assert.equal(decide({draft:false,checks:check('completed',conclusion),expected}), 'red');
+  }
+  assert.equal(decide({draft:false,checks:check('completed','neutral'),expected}), 'unknown');
+});

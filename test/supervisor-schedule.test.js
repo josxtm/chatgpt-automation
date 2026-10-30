@@ -18,3 +18,28 @@ test('scheduled supervisor uses a ten-minute interval offset from the hour', () 
   assert.match(yaml, /contents:\s*read/);
   assert.doesNotMatch(yaml, /wrangler|cloudflare/i);
 });
+
+test('supervisor retains least-privilege read-only permissions and serialized runs', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/supervisor.yml', import.meta.url), 'utf8');
+  const block = yaml.match(/^permissions:\r?\n((?:[ \t]+[^\r\n]*\r?\n)+)/m);
+  assert.ok(block, 'supervisor must declare explicit workflow permissions');
+  const permissions = block[1].trim().split(/\r?\n/).map(line => line.trim()).sort();
+  assert.deepEqual(permissions, [
+    'contents: read',
+    'pull-requests: read',
+    'checks: read',
+    'actions: read'
+  ].sort(), 'no write, token, or extra scopes may be added silently');
+  assert.doesNotMatch(yaml, /^\s+permissions:/m, 'jobs must not override the read-only permission set');
+  assert.match(yaml, /^concurrency:\r?\n {2}group: multiproject-supervisor\r?\n {2}cancel-in-progress: false(?:\r?\n|$)/m,
+    'supervisor must serialize runs without cancelling an in-progress inspection');
+  assert.doesNotMatch(yaml, /^\s*(?:pull_request_target|repository_dispatch|workflow_run):/m,
+    'no privileged or chained triggers');
+});
+
+test('Supervisor CI retains read-only token permissions', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  assert.match(yaml, /^permissions:\r?\n {2}contents: read\r?\n(?=jobs:)/m,
+    'CI must have only contents: read');
+  assert.doesNotMatch(yaml, /^\s+permissions:/m, 'jobs must not override CI permissions');
+});

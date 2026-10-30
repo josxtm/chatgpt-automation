@@ -6,6 +6,7 @@ function report(line) { summary.push(line); console.log(line); }
 function publish() { if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\n') + '\n'); }
 process.on('exit', publish);
 import { validateRepositories, inspectRepository } from '../src/supervisor-core.js';
+import { createGithubGet } from '../src/github-api.js';
 import { prSummaryRows } from '../src/summary.js';
 import { assessScheduleHistory, assessScheduleCadence, assessScheduleRevision } from '../src/schedule-health.js';
 import { assessWorkflowState, scheduleDiagnosticHint, cadenceDiagnosticHint, scheduleSilenceHint, workflowActionsLink } from '../src/workflow-state.js';
@@ -17,16 +18,7 @@ if (!repositories.length) {
   process.exit(0);
 }
 if (!process.env.GH_TOKEN) throw new Error('GH_TOKEN missing: configure SUPERVISOR_GITHUB_TOKEN for other/private repositories');
-async function get(path) {
-  const res = await fetch('https://api.github.com' + path, {headers:{
-    Authorization:'Bearer ' + process.env.GH_TOKEN,
-    Accept:'application/vnd.github+json',
-    'X-GitHub-Api-Version':'2022-11-28',
-    'User-Agent':'chatgpt-automation'
-  }});
-  if (!res.ok) throw new Error('GitHub API ' + res.status + ' at ' + path);
-  return res.json();
-}
+const get = createGithubGet(process.env.GH_TOKEN);
 // A manual green run does not prove that GitHub's cron is firing.
 report('## Diagnóstico de ejecuciones programadas');
 const ownRepo = process.env.GITHUB_REPOSITORY;

@@ -1,0 +1,26 @@
+name: Supervisor Recovery
+on:
+  schedule:
+    - cron: '8-58/10 * * * *'
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['Supervisor CI']
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+  pull-requests: read
+  checks: read
+  actions: read
+jobs:
+  recover:
+    # Never execute PR code, download artifacts or inherit a PR's credentials.
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.head_repository.full_name == github.repository &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.event != 'pull_request'))
+    uses: ./.github/workflows/supervisor.yml
+    secrets:
+      SUPERVISOR_GITHUB_TOKEN: ${{ secrets.SUPERVISOR_GITHUB_TOKEN }}
