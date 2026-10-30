@@ -54,8 +54,11 @@ export function auditScheduleWindow(runs, options = {}) {
   const boundaryGaps = [leadingSilence, trailingSilence]
     .filter(minutes => minutes !== null && minutes > maxGapMinutes).length;
   const windowClosed = now >= to;
+  // Only an explicit boolean true proves the loader finished its pagination.
+  // Truthy strings or numbers must not allow a healthy-cadence verdict.
+  const complete = historyComplete === true;
   const state = !windowClosed ? 'window-open' :
-    !historyComplete ? 'incomplete-history' :
+    !complete ? 'incomplete-history' :
     selected.length < 2 ? 'insufficient-data' :
     gaps ? 'gaps' : boundaryGaps ? 'boundary-gaps' : 'no-large-gaps';
   const round = value => Math.round(value * 10) / 10;
@@ -63,7 +66,7 @@ export function auditScheduleWindow(runs, options = {}) {
     state,
     start: new Date(from).toISOString(),
     end: new Date(to).toISOString(),
-    historyComplete: Boolean(historyComplete),
+    historyComplete: complete,
     samples: selected.length,
     intervalsMinutes,
     gaps,
