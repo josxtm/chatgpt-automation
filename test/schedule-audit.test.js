@@ -60,6 +60,11 @@ test('reject manual runs, duplicate IDs, malformed timestamps and unsorted pages
     [run(4, '2026-10-29T23:50:00Z', 'workflow_dispatch'), runs[1]],
     [runs[0], { ...runs[1], id: 4 }],
     [runs[0], { ...runs[1], created_at: 'invalid' }],
+    [runs[0], { ...runs[1], created_at: '2026-02-30T00:00:00Z' }],
+    [runs[0], { ...runs[1], created_at: '2026-10-29 23:20:00' }],
+    [runs[0], { ...runs[1], created_at: '2026-10-29T23:20:00+00:00' }],
+    [runs[0], { ...runs[1], created_at: '2026-10-29T23:20:00.1234Z' }],
+    [runs[0], { ...runs[1], created_at: 0 }],
     [runs[1], runs[0]],
     [runs[0], run(-1, '2026-10-29T23:30:00Z')],
     [runs[0], run(99, '2026-10-31T00:00:00Z')]
