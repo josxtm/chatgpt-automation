@@ -4,9 +4,14 @@ export function validateRepositories(config) {
   if (!config || !Array.isArray(config.repositories)) throw new Error('Invalid repository configuration');
   const names = new Set();
   return config.repositories.map(entry => {
-    if (!entry || typeof entry.full_name !== 'string' || !/^[\w.-]+\/[\w.-]+$/.test(entry.full_name)) throw new Error('Invalid repository name');
-    if (names.has(entry.full_name)) throw new Error('Duplicate repository: ' + entry.full_name);
-    names.add(entry.full_name);
+    if (!entry || typeof entry.full_name !== 'string' || !/^[\w.-]+\/[\w.-]+$/.test(entry.full_name) ||
+        entry.full_name.split('/').some(part => part === '.' || part === '..')) {
+      throw new Error('Invalid repository name');
+    }
+    // GitHub repository names are case-insensitive; avoid inspecting the same repo twice.
+    const identity = entry.full_name.toLowerCase();
+    if (names.has(identity)) throw new Error('Duplicate repository: ' + entry.full_name);
+    names.add(identity);
     if (typeof entry.enabled !== 'boolean') throw new Error('Invalid enabled flag');
     if (!Array.isArray(entry.required_checks) || !entry.required_checks.length || entry.required_checks.some(n => typeof n !== 'string' || !n.trim()) || new Set(entry.required_checks).size !== entry.required_checks.length) throw new Error('Invalid required checks for ' + entry.full_name);
     return entry;
