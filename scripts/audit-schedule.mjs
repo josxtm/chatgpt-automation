@@ -1,7 +1,7 @@
 // Usage: GH_TOKEN=... node scripts/audit-schedule.mjs START_UTC END_UTC
 // A read-only report; this script does not dispatch workflows or modify PRs.
 import { appendFileSync } from 'node:fs';
-import { auditScheduleWindow } from '../src/schedule-audit.js';
+import { auditScheduleWindow, auditExitCode } from '../src/schedule-audit.js';
 
 const [start, end] = process.argv.slice(2);
 const repo = process.env.GITHUB_REPOSITORY || 'josxtm/chatgpt-automation';
@@ -70,7 +70,8 @@ try {
     }
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, rows.join('\n') + '\n');
   }
-  if (audit.state === 'unknown' || audit.state === 'incomplete-history') process.exitCode = 1;
+  // Nonzero for unfinished, inconclusive or unhealthy cadence: never imply success.
+  process.exitCode = auditExitCode(audit);
 } catch (error) {
   console.error('Audit unavailable (no healthy-cadence claim): ' + String(error));
   process.exitCode = 1;
