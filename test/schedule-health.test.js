@@ -190,3 +190,18 @@ test('revision diagnostic fails closed on missing or malformed SHA metadata', ()
   assert.equal(assessScheduleRevision({ total_count: 0, workflow_runs: [{ ...run, head_sha: sha }] }, sha).state, 'unknown');
   assert.equal(assessScheduleRevision({ ...history, workflow_runs: [{ ...run, head_sha: sha, event: 'workflow_dispatch' }] }, sha).state, 'unknown');
 });
+
+test('revision diagnostic rejects incomplete pages and invalid timestamps', () => {
+  const sha = 'a'.repeat(40);
+  const valid = { ...run, head_sha: sha };
+  for (const history of [
+    { total_count: 2, workflow_runs: [valid] },
+    { total_count: 1, workflow_runs: [valid, { ...valid, id: 43 }] },
+    { total_count: 1, workflow_runs: [{ ...valid, created_at: 'invalid' }] }
+  ]) {
+    assert.equal(assessScheduleRevision(history, sha).state, 'unknown');
+  }
+  // A full first page is valid even when older runs exist on later pages.
+  const firstPage = Array.from({ length: 12 }, (_, index) => ({ ...valid, id: 100 - index }));
+  assert.equal(assessScheduleRevision({ total_count: 13, workflow_runs: firstPage }, sha).state, 'current-revision');
+});
