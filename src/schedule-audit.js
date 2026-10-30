@@ -87,3 +87,21 @@ export function auditExitCode(audit) {
     Number.isSafeInteger(audit.samples) && audit.samples >= 2 &&
     audit.gaps === 0 && audit.boundaryGaps === 0 ? 0 : 1;
 }
+
+// A short GitHub Actions page is complete only when its reported total agrees.
+// Fail closed on truncated pages or totals changing during pagination.
+export function validateScheduleHistoryPage(data, seenCount, previousTotal = null, pageSize = 100) {
+  if (!data || !Number.isSafeInteger(data.total_count) || data.total_count < 0 ||
+      !Array.isArray(data.workflow_runs) || !Number.isSafeInteger(seenCount) || seenCount < 0 ||
+      !Number.isSafeInteger(pageSize) || pageSize < 1 ||
+      (previousTotal !== null && data.total_count !== previousTotal)) {
+    throw new Error('Malformed or inconsistent GitHub Actions history page');
+  }
+  const count = data.workflow_runs.length;
+  const nextCount = seenCount + count;
+  if (count > pageSize || nextCount > data.total_count ||
+      (count < pageSize && nextCount !== data.total_count)) {
+    throw new Error('Truncated or inconsistent GitHub Actions history page');
+  }
+  return { totalCount: data.total_count, complete: nextCount === data.total_count };
+}
