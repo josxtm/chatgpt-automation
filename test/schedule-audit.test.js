@@ -73,3 +73,38 @@ test('invalid audit windows and thresholds fail closed', () => {
     { ...options, now: NaN }
   ]) assert.throws(() => auditScheduleWindow([], invalid), TypeError);
 });
+
+test('long boundary silence cannot be reported as healthy cadence', () => {
+  const clustered = [
+    run(3, '2026-10-29T23:50:00Z'),
+    run(2, '2026-10-29T23:40:00Z'),
+    run(1, '2026-10-28T23:50:00Z')
+  ];
+  const result = auditScheduleWindow(clustered, options);
+  assert.equal(result.state, 'boundary-gaps');
+  assert.equal(result.gaps, 0, 'inter-run gaps stay separate');
+  assert.equal(result.boundaryGaps, 1);
+  assert.equal(result.leadingSilenceMinutes, 1420);
+  assert.equal(result.trailingSilenceMinutes, 10);
+});
+
+test('closed 24-hour window is healthy only with regular starts and short edges', () => {
+  const regular = Array.from({ length: 144 }, (_, index) =>
+    run(144 - index, new Date(Date.parse(end) - (7 + index * 10) * 60000).toISOString()));
+  const result = auditScheduleWindow(regular, options);
+  assert.equal(result.state, 'no-large-gaps');
+  assert.equal(result.gaps, 0);
+  assert.equal(result.boundaryGaps, 0);
+  assert.equal(result.leadingSilenceMinutes, 3);
+  assert.equal(result.trailingSilenceMinutes, 7);
+});
+
+test('boundary threshold is strictly greater than 15 minutes', () => {
+  const hourly = { ...options, end: '2026-10-29T01:00:00Z' };
+  const sample = minute => [46, 36, 26, 16].map((value, i) =>
+    run(4 - i, '2026-10-29T00:' + String(value + minute - 16).padStart(2, '0') + ':00Z'));
+  assert.equal(auditScheduleWindow(sample(15), hourly).state, 'no-large-gaps');
+  const delayed = auditScheduleWindow(sample(16), hourly);
+  assert.equal(delayed.state, 'boundary-gaps');
+  assert.equal(delayed.boundaryGaps, 1);
+});

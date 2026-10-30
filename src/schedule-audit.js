@@ -46,11 +46,18 @@ export function auditScheduleWindow(runs, options = {}) {
     }
   }
 
+  // A closed window can hide hours without a single start at its edges.
+  // Keep edge silences separate from intervals between actual runs, but never
+  // report "no-large-gaps" when either edge exceeds the same threshold.
+  const leadingSilence = selected.length ? (selected.at(-1).timestamp - from) / 60000 : null;
+  const trailingSilence = selected.length ? (Math.min(to, now) - selected[0].timestamp) / 60000 : null;
+  const boundaryGaps = [leadingSilence, trailingSilence]
+    .filter(minutes => minutes !== null && minutes > maxGapMinutes).length;
   const windowClosed = now >= to;
   const state = !windowClosed ? 'window-open' :
     !historyComplete ? 'incomplete-history' :
     selected.length < 2 ? 'insufficient-data' :
-    gaps ? 'gaps' : 'no-large-gaps';
+    gaps ? 'gaps' : boundaryGaps ? 'boundary-gaps' : 'no-large-gaps';
   const round = value => Math.round(value * 10) / 10;
   return {
     state,
@@ -62,8 +69,9 @@ export function auditScheduleWindow(runs, options = {}) {
     gaps,
     maxGapMinutes: maxGap === null ? null : round(maxGap),
     largestGap,
-    // Boundary silences are separate from intervals between observed starts.
-    leadingSilenceMinutes: selected.length ? round((selected.at(-1).timestamp - from) / 60000) : null,
-    trailingSilenceMinutes: selected.length ? round((Math.min(to, now) - selected[0].timestamp) / 60000) : null
+    // Boundary silences are not counted as inter-run gaps.
+    boundaryGaps,
+    leadingSilenceMinutes: leadingSilence === null ? null : round(leadingSilence),
+    trailingSilenceMinutes: trailingSilence === null ? null : round(trailingSilence)
   };
 }

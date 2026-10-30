@@ -57,6 +57,7 @@ try {
       '- Intervalos >15 minutos: ' + audit.gaps,
       '- Máximo intervalo observado: ' + (audit.maxGapMinutes ?? 'sin datos') + ' minutos',
       '- Historial completo: ' + audit.historyComplete,
+      '- Silencios de borde >15 minutos: ' + audit.boundaryGaps,
       '- Silencio inicial/final (min): ' + (audit.leadingSilenceMinutes ?? 'sin datos') +
         ' / ' + (audit.trailingSilenceMinutes ?? 'sin datos'),
       ''
