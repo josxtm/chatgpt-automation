@@ -50,3 +50,35 @@ test('rejects malformed PR metadata before requesting check runs', async () => {
     assert.equal(calls.length, 1, 'must not fetch checks for malformed PR metadata');
   }
 });
+
+test('rejects duplicate PR numbers without querying checks', async () => {
+  const entry = { full_name: 'owner/repo', enabled: true, required_checks: ['test'] };
+  const pr = { number: 7, head: { sha: 'a'.repeat(40) }, draft: false };
+  let checksRequested = 0;
+  const get = async path => {
+    if (path.includes('/pulls?')) return [pr, { ...pr, head: { sha: 'b'.repeat(40) } }];
+    checksRequested++;
+    throw new Error('Unexpected check-runs request');
+  };
+  await assert.rejects(inspectRepository(entry, get), /Duplicate pull request number/);
+  assert.equal(checksRequested, 0);
+});
+
+test('rejects PR repeated across pagination boundaries before checking any PR', async () => {
+  const entry = { full_name: 'owner/repo', enabled: true, required_checks: ['test'] };
+  let checksRequested = 0;
+  const get = async path => {
+    if (path.includes('/pulls?')) {
+      if (/[?&]page=1(?:&|$)/.test(path)) {
+        return Array.from({ length: 100 }, (_, i) => ({
+          number: i + 1, head: { sha: 'a'.repeat(40) }, draft: false
+        }));
+      }
+      return [{ number: 1, head: { sha: 'b'.repeat(40) }, draft: false }];
+    }
+    checksRequested++;
+    throw new Error('Unexpected check-runs request');
+  };
+  await assert.rejects(inspectRepository(entry, get), /Duplicate pull request number/);
+  assert.equal(checksRequested, 0);
+});
