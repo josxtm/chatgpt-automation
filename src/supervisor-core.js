@@ -36,7 +36,11 @@ export async function inspectRepository(entry, get) {
   const prs = await fetchPages(get, '/repos/' + repo + '/pulls?state=open');
   const observations = [];
   for (const pr of prs) {
-    if (!pr?.head?.sha || !Number.isInteger(pr.number)) throw new Error('Malformed pull request');
+    // Never construct API paths or classify PRs from malformed GitHub metadata.
+    // In particular, an absent/non-boolean draft flag must not be treated as false.
+    if (!Number.isSafeInteger(pr?.number) || pr.number <= 0 ||
+        typeof pr?.head?.sha !== 'string' || !/^[a-f0-9]{40}$/i.test(pr.head.sha) ||
+        typeof pr.draft !== 'boolean') throw new Error('Malformed pull request');
     const checks = await fetchPages(get, '/repos/' + repo + '/commits/' + pr.head.sha + '/check-runs', 'check_runs');
     observations.push({repo, pr:pr.number, sha:pr.head.sha, state:decide({draft:pr.draft,checks,expected:entry.required_checks})});
   }
