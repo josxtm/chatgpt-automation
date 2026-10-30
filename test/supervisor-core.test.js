@@ -22,3 +22,24 @@ test('inspects PR with exact expected check', async () => {
   const get=async path=>path.includes('/pulls?')?[{number:7,head:{sha:'abc'},draft:false}]:{total_count:1,check_runs:[{name:'test',status:'completed',conclusion:'success'}]};
   assert.deepEqual(await inspectRepository(entry,get),[{repo:'owner/repo',pr:7,sha:'abc',state:'green'}]);
 });
+
+test('draft PR is reported without querying check runs', async () => {
+  const entry={full_name:'owner/repo',enabled:true,required_checks:['test']};
+  const calls=[];
+  const get=async path=>{
+    calls.push(path);
+    if (path.includes('/pulls?')) return [{number:8,head:{sha:'abc'},draft:true}];
+    throw new Error('Check-runs endpoint unavailable');
+  };
+  assert.deepEqual(await inspectRepository(entry,get),[{repo:'owner/repo',pr:8,sha:'abc',state:'draft'}]);
+  assert.equal(calls.length,1, 'draft PR must not query check-runs');
+});
+
+test('non-draft PR still fails closed when check-runs API is unavailable', async () => {
+  const entry={full_name:'owner/repo',enabled:true,required_checks:['test']};
+  const get=async path=>{
+    if (path.includes('/pulls?')) return [{number:9,head:{sha:'abc'},draft:false}];
+    throw new Error('Check-runs endpoint unavailable');
+  };
+  await assert.rejects(inspectRepository(entry,get),/Check-runs endpoint unavailable/);
+});
