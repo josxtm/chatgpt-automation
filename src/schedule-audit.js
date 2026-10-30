@@ -28,9 +28,16 @@ export function auditScheduleWindow(runs, options = {}) {
   const selected = [];
   let previous = Infinity;
   for (const run of runs) {
-    const timestamp = Date.parse(run?.created_at);
+    const rawTimestamp = run?.created_at;
+    // GitHub returns UTC ISO timestamps. Date.parse also accepts ambiguous
+    // dates and normalizes impossible calendar dates, so reject those first.
+    const utcTimestamp = typeof rawTimestamp === 'string' &&
+      /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$/.test(rawTimestamp);
+    const timestamp = utcTimestamp ? Date.parse(rawTimestamp) : NaN;
+    const canonical = Number.isFinite(timestamp) &&
+      new Date(timestamp).toISOString().slice(0, 19) === rawTimestamp.slice(0, 19);
     if (run?.event !== 'schedule' || !Number.isSafeInteger(run?.id) || run.id <= 0 ||
-        seen.has(run.id) || !Number.isFinite(timestamp) || timestamp > now ||
+        seen.has(run.id) || !canonical || timestamp > now ||
         timestamp > previous) {
       return { state: 'unknown', reason: 'Invalid, duplicate or unordered schedule history' };
     }
