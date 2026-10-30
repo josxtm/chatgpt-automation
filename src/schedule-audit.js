@@ -32,7 +32,7 @@ export function auditScheduleWindow(runs, options = {}) {
     // GitHub returns UTC ISO timestamps. Date.parse also accepts ambiguous
     // dates and normalizes impossible calendar dates, so reject those first.
     const utcTimestamp = typeof rawTimestamp === 'string' &&
-      /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$/.test(rawTimestamp);
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(rawTimestamp);
     const timestamp = utcTimestamp ? Date.parse(rawTimestamp) : NaN;
     const canonical = Number.isFinite(timestamp) &&
       new Date(timestamp).toISOString().slice(0, 19) === rawTimestamp.slice(0, 19);
