@@ -49,7 +49,7 @@ test('shared reusable workflow serializes native and recovery work with read-onl
   assert.match(native, /if: steps.gate.outputs.inspect == 'true'/);
   assert.match(fallback, /uses: .\/.github\/workflows\/supervisor.yml/);
   assert.match(fallback, /head_repository.full_name == github.repository/);
-  assert.match(fallback, /workflow_run.event != 'pull_request'/);
+  assert.ok(fallback.includes("contains(fromJSON('[\"push\",\"workflow_dispatch\"]'), github.event.workflow_run.event)"));
   assert.doesNotMatch(fallback, /secrets: inherit|write|checkout@|download-artifact|repository_dispatch|pull_request_target/);
   assert.doesNotMatch(native + fallback, /actions: write|contents: write/);
 });
@@ -66,4 +66,10 @@ test('history page cap cannot authorize work with an incomplete window', async (
     return { total_count: 1100, workflow_runs: Array.from({ length: 100 }, (_, i) => ({ ...run, id: page * 1000 + i })) };
   };
   await assert.rejects(shouldInspect(get, context), /pagination limit/);
+});
+
+test('HTTP errors and timeouts never authorize a fresh inspection', async () => {
+  for (const message of ['GitHub API 403', 'GitHub API 429', 'GitHub API 500', 'GitHub API timeout']) {
+    await assert.rejects(shouldInspect(async () => { throw new Error(message); }, context), { message });
+  }
 });

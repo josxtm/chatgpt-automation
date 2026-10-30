@@ -149,3 +149,5 @@ ningún evento, la recuperación solo con Actions no puede garantizar un máximo
 15 minutos. Los recibos de recuperación no se cuentan como cron nativo: la auditoría
 24h sigue filtrando exclusivamente `supervisor.yml` con evento `schedule`.
 Ver [auditoría y matriz de consolidación](docs/AUDIT-2026-10-30.md).
+
+Guía de activación, primeras 24 horas y reversión: [PRODUCTION.md](docs/PRODUCTION.md).
