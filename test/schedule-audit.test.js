@@ -46,6 +46,11 @@ test('15 minutes is tolerated, strictly greater than 15 is a gap', () => {
 test('an open window or incomplete pages never claim a complete audit', () => {
   assert.equal(auditScheduleWindow(runs, { ...options, now: Date.parse('2026-10-29T23:55:00Z') }).state, 'window-open');
   assert.equal(auditScheduleWindow(runs, { ...options, historyComplete: false }).state, 'incomplete-history');
+  for (const nonBoolean of ['true', 'false', 1, [], {}]) {
+    const result = auditScheduleWindow(runs, { ...options, historyComplete: nonBoolean });
+    assert.equal(result.state, 'incomplete-history');
+    assert.equal(result.historyComplete, false);
+  }
   assert.equal(auditScheduleWindow([], options).state, 'insufficient-data');
   assert.equal(auditScheduleWindow([runs[0]], options).state, 'insufficient-data');
 });
