@@ -1,0 +1,76 @@
+// Usage: GH_TOKEN=... node scripts/audit-schedule.mjs START_UTC END_UTC
+// A read-only report; this script does not dispatch workflows or modify PRs.
+import { appendFileSync } from 'node:fs';
+import { auditScheduleWindow } from '../src/schedule-audit.js';
+
+const [start, end] = process.argv.slice(2);
+const repo = process.env.GITHUB_REPOSITORY || 'josxtm/chatgpt-automation';
+const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+if (!start || !end || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo) || !token) {
+  console.error('Usage: GH_TOKEN=... node scripts/audit-schedule.mjs START_UTC END_UTC');
+  process.exit(2);
+}
+
+async function loadScheduleHistory() {
+  const runs = [];
+  const from = Date.parse(start);
+  if (!Number.isFinite(from)) throw new Error('Invalid start timestamp');
+  for (let page = 1; page <= 20; page++) {
+    const path = '/repos/' + repo + '/actions/workflows/supervisor.yml/runs?event=schedule&per_page=100&page=' + page;
+    const response = await fetch('https://api.github.com' + path, {
+      headers: {
+        Authorization: 'Bearer ' + token,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'chatgpt-automation-audit'
+      }
+    });
+    if (!response.ok) throw new Error('GitHub Actions API HTTP ' + response.status + ' on page ' + page);
+    const data = await response.json();
+    if (!Number.isSafeInteger(data.total_count) || !Array.isArray(data.workflow_runs)) {
+      throw new Error('Malformed GitHub Actions history on page ' + page);
+    }
+    runs.push(...data.workflow_runs);
+    const oldest = data.workflow_runs.at(-1);
+    // Fetch enough pages to cover the beginning of the requested window.
+    // A short final page, or all reported rows, also proves pagination ended.
+    if (!oldest || Date.parse(oldest.created_at) < from ||
+        data.workflow_runs.length < 100 || runs.length >= data.total_count) {
+      return { runs, historyComplete: true };
+    }
+  }
+  // A cap must never be interpreted as complete history.
+  return { runs, historyComplete: false };
+}
+
+try {
+  const { runs, historyComplete } = await loadScheduleHistory();
+  const audit = auditScheduleWindow(runs, { start, end, historyComplete });
+  console.log(JSON.stringify(audit, null, 2));
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    const rows = [
+      '## Auditoría de disparos schedule (solo lectura)',
+      '',
+      '- Ventana UTC: ' + audit.start + ' → ' + audit.end,
+      '- Estado: **' + audit.state + '**',
+      '- Disparos automáticos: ' + audit.samples,
+      '- Intervalos >15 minutos: ' + audit.gaps,
+      '- Máximo intervalo observado: ' + (audit.maxGapMinutes ?? 'sin datos') + ' minutos',
+      '- Historial completo: ' + audit.historyComplete,
+      '- Silencio inicial/final (min): ' + (audit.leadingSilenceMinutes ?? 'sin datos') +
+        ' / ' + (audit.trailingSilenceMinutes ?? 'sin datos'),
+      ''
+    ];
+    if (audit.largestGap) {
+      rows.push('- Mayor hueco: ' + audit.largestGap.older + ' → ' + audit.largestGap.newer);
+      rows.push('- Ejecuciones: https://github.com/' + repo + '/actions/runs/' +
+        audit.largestGap.olderRunId + ' y https://github.com/' + repo + '/actions/runs/' +
+        audit.largestGap.newerRunId);
+    }
+    appendFileSync(process.env.GITHUB_STEP_SUMMARY, rows.join('\n') + '\n');
+  }
+  if (audit.state === 'unknown' || audit.state === 'incomplete-history') process.exitCode = 1;
+} catch (error) {
+  console.error('Audit unavailable (no healthy-cadence claim): ' + String(error));
+  process.exitCode = 1;
+}
