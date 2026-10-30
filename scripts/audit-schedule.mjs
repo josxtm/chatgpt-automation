@@ -1,7 +1,7 @@
 // Usage: GH_TOKEN=... node scripts/audit-schedule.mjs START_UTC END_UTC
 // A read-only report; this script does not dispatch workflows or modify PRs.
 import { appendFileSync } from 'node:fs';
-import { auditScheduleWindow, auditExitCode } from '../src/schedule-audit.js';
+import { auditScheduleWindow, auditExitCode, validateScheduleHistoryPage } from '../src/schedule-audit.js';
 
 const [start, end] = process.argv.slice(2);
 const repo = process.env.GITHUB_REPOSITORY || 'josxtm/chatgpt-automation';
@@ -13,6 +13,7 @@ if (!start || !end || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo) || !token
 
 async function loadScheduleHistory() {
   const runs = [];
+  let reportedTotal = null;
   const from = Date.parse(start);
   if (!Number.isFinite(from)) throw new Error('Invalid start timestamp');
   for (let page = 1; page <= 20; page++) {
@@ -27,15 +28,14 @@ async function loadScheduleHistory() {
     });
     if (!response.ok) throw new Error('GitHub Actions API HTTP ' + response.status + ' on page ' + page);
     const data = await response.json();
-    if (!Number.isSafeInteger(data.total_count) || !Array.isArray(data.workflow_runs)) {
-      throw new Error('Malformed GitHub Actions history on page ' + page);
-    }
+    const pageState = validateScheduleHistoryPage(data, runs.length, reportedTotal);
+    reportedTotal = pageState.totalCount;
     runs.push(...data.workflow_runs);
     const oldest = data.workflow_runs.at(-1);
     // Fetch enough pages to cover the beginning of the requested window.
     // A short final page, or all reported rows, also proves pagination ended.
     if (!oldest || Date.parse(oldest.created_at) < from ||
-        data.workflow_runs.length < 100 || runs.length >= data.total_count) {
+        pageState.complete) {
       return { runs, historyComplete: true };
     }
   }
