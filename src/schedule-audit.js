@@ -78,3 +78,12 @@ export function auditScheduleWindow(runs, options = {}) {
     trailingSilenceMinutes: trailingSilence === null ? null : round(trailingSilence)
   };
 }
+
+// Only a completed, fully evidenced and gap-free window is a successful audit.
+// A diagnostic state (including an unfinished window) must never exit green.
+export function auditExitCode(audit) {
+  return audit?.state === 'no-large-gaps' &&
+    audit.historyComplete === true &&
+    Number.isSafeInteger(audit.samples) && audit.samples >= 2 &&
+    audit.gaps === 0 && audit.boundaryGaps === 0 ? 0 : 1;
+}
