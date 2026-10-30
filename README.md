@@ -73,9 +73,9 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 - El permiso adicional \`actions: read\` se limita a lectura. Una ejecución manual verde no prueba el cron; un único \`observed\` tampoco demuestra periodicidad sostenida.
 - Si el historial muestra \`never-seen\`, revisar el estado de habilitación del workflow y las restricciones de Actions en GitHub. El cron sigue siendo best-effort.
 
-## Cadencia cada diez minutos (PR #11 integrado)
+## Cadencia cada diez minutos (PR #11 integrado; resincronización PR #17)
 
-- El cron vigente `7-57/10 * * * *` solicita seis ejecuciones por hora, en los minutos 07, 17, 27, 37, 47 y 57 (UTC).
+- El cron vigente tras fusionar el PR #17 es `3-53/10 * * * *`: seis oportunidades por hora, en los minutos 03, 13, 23, 33, 43 y 53 (UTC). El PR #11 introdujo inicialmente `7-57/10`; ya no es el valor activo.
 - `npm test` comprueba el paso de diez minutos, los seis disparos por hora, el desplazamiento respecto al minuto 0 y la continuidad entre horas.
 - **Esta modificación solo entra en funcionamiento cuando el PR se fusiona manualmente en `main`**. Los cron de GitHub Actions se ejecutan desde la rama predeterminada.
 - Para confirmar el funcionamiento real, comprobar en **Actions → Multiproject Supervisor** una nueva ejecución con evento `schedule` posterior a la fusión. Un CI verde o una ejecución `workflow_dispatch` no lo acreditan.
@@ -83,7 +83,7 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 
 ## Verificación operativa del cron de 10 minutos
 
-- El cron activo en `main` es `7-57/10 * * * *` (UTC). GitHub Actions puede retrasar u omitir ejecuciones; no equivale a una garantía de disponibilidad.
+- El cron activo en `main` es `3-53/10 * * * *` (UTC), desde el PR #17. GitHub Actions puede retrasar u omitir ejecuciones; no equivale a una garantía de disponibilidad.
 - Abrir [Multiproject Supervisor](https://github.com/josxtm/chatgpt-automation/actions/workflows/supervisor.yml) y filtrar por evento **schedule**. Comprobar que existen ejecuciones posteriores a la última fusión y revisar su **Summary → Supervisor execution evidence**.
 - La presencia de `workflow_dispatch`, `pull_request` o un `Supervisor CI` verde **no demuestra** que el cron funcione.
 - Si no hay nuevos `schedule` durante más de 30 minutos, comprobar que el workflow está habilitado, las políticas de Actions y la actividad del repositorio; consultar [estado de GitHub](https://www.githubstatus.com/). Una ejecución manual sirve para probar el código, no el planificador.
@@ -110,3 +110,12 @@ Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en G
 ### Enlace del workflow y errores 404
 
 Si el enlace de Actions basado en `supervisor.yml` devuelve **404** aunque el archivo exista en `main`, no asumir que el cron está deshabilitado. En el Summary de una ejecución del supervisor después de integrar esta mejora se mostrará un enlace alternativo construido con el **ID numérico del workflow**, obtenido en modo lectura de la API de GitHub. Si la API no devuelve un ID válido, se informará sin inventar un enlace. Si también falla el enlace por ID, revisar los permisos y el registro del workflow en Actions; la existencia del archivo y un CI verde no prueban el funcionamiento del cron.
+
+## Auditoría de 24 horas tras el PR #17 (pendiente de resultados)
+
+- **Ventana de observación:** desde el merge de `4b29aa62a2430cc22a337fb72ec56d68b314777a` (2026-10-29 23:21:34 UTC) hasta 2026-10-30 23:21:34 UTC. No interpretar resultados parciales como un informe de 24 horas.
+- Consultar el historial de `Multiproject Supervisor` filtrando **exclusivamente** por `event=schedule` y por `created_at` dentro de esa ventana. Excluir `workflow_dispatch`, `pull_request`, `push` y `Supervisor CI`. Registrar ID, URL, fecha UTC, estado, conclusión y SHA de cada ejecución; paginar el historial si es necesario.
+- Ordenar los disparos por fecha y calcular los intervalos entre pares consecutivos. Informar de número de disparos, número de intervalos **>15 minutos**, intervalo máximo y enlaces a las dos ejecuciones que delimitan cada hueco. Medir por separado la espera desde el inicio de la ventana hasta el primer disparo y desde el último disparo hasta el cierre: no son intervalos entre ejecuciones.
+- El cron solicita 144 oportunidades en 24 horas, pero GitHub Actions puede retrasar u omitir disparos. Una muestra con pocos registros, un CI verde o un único `schedule` no acreditan periodicidad. No inventar resultados si la API devuelve páginas incompletas o metadatos inconsistentes.
+- **Si persisten huecos >15 minutos**, preparar en **otro PR** una recuperación controlada y pruebas de concurrencia e idempotencia. Verificar la existencia de una ejecución activa o completada para el intervalo lógico antes de recuperar; serializar el trabajo y no reejecutar por separado todos los intervalos omitidos. Un segundo cron de GitHub tampoco garantiza recuperación si GitHub deja de emitir todos los disparos.
+- **Política:** no activar Cloudflare, no ampliar permisos ni fusionar automáticamente; exigir `Supervisor CI` verde para el commit exacto de cualquier PR candidato. La auditoría y el mecanismo de recuperación son fases distintas.
