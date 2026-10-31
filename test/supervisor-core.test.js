@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateRepositories, fetchPages, inspectRepository } from '../src/supervisor-core.js';
+import { validateRepositories, enabledRepositories, fetchPages, inspectRepository } from '../src/supervisor-core.js';
 
 test('rejects duplicate repositories and invalid required checks', () => {
   const good={full_name:'owner/repo',enabled:true,required_checks:['test']};
@@ -112,4 +112,13 @@ test('non-draft PR still fails closed when check-runs API is unavailable', async
     throw new Error('Check-runs endpoint unavailable');
   };
   await assert.rejects(inspectRepository(entry,get),/Check-runs endpoint unavailable/);
+});
+
+test('empty or fully disabled configuration fails closed instead of producing green', () => {
+  const disabled = { full_name: 'owner/repo', enabled: false, required_checks: ['test'] };
+  for (const config of [{ repositories: [] }, { repositories: [disabled] }]) {
+    assert.throws(() => enabledRepositories(config), /No enabled repositories/);
+  }
+  assert.deepEqual(enabledRepositories({ repositories: [disabled, { ...disabled, full_name: 'owner/active', enabled: true }] }),
+    [{ ...disabled, full_name: 'owner/active', enabled: true }]);
 });
