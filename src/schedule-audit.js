@@ -50,12 +50,22 @@ export function auditScheduleWindow(runs, options = {}) {
   let maxGap = null;
   let largestGap = null;
   const intervalsMinutes = [];
+  const gapDetails = [];
   for (let i = 1; i < selected.length; i++) {
     const newer = selected[i - 1];
     const older = selected[i];
     const minutes = (newer.timestamp - older.timestamp) / 60000;
     intervalsMinutes.push(Math.round(minutes * 10) / 10);
-    if (minutes > maxGapMinutes) gaps++;
+    if (minutes > maxGapMinutes) {
+      gaps++;
+      gapDetails.push({
+        older: new Date(older.timestamp).toISOString(),
+        newer: new Date(newer.timestamp).toISOString(),
+        olderRunId: older.id,
+        newerRunId: newer.id,
+        minutes: Math.round(minutes * 10) / 10
+      });
+    }
     if (maxGap === null || minutes > maxGap) {
       maxGap = minutes;
       largestGap = {
@@ -83,14 +93,20 @@ export function auditScheduleWindow(runs, options = {}) {
     selected.length < 2 ? 'insufficient-data' :
     gaps ? 'gaps' : boundaryGaps ? 'boundary-gaps' : 'no-large-gaps';
   const round = value => Math.round(value * 10) / 10;
+  const first = selected.at(-1);
+  const last = selected[0];
   return {
     state,
+    // Expose the real endpoints of the observed sample, never inferred ticks.
+    firstRun: first ? { id: first.id, createdAt: new Date(first.timestamp).toISOString() } : null,
+    lastRun: last ? { id: last.id, createdAt: new Date(last.timestamp).toISOString() } : null,
     start: new Date(from).toISOString(),
     end: new Date(to).toISOString(),
     historyComplete: complete,
     samples: selected.length,
     intervalsMinutes,
     gaps,
+    gapDetails,
     maxGapMinutes: maxGap === null ? null : round(maxGap),
     largestGap,
     // Boundary silences are not counted as inter-run gaps.

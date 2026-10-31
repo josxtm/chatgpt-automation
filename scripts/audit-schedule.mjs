@@ -46,6 +46,10 @@ try {
       '- Ventana UTC: ' + audit.start + ' → ' + audit.end,
       '- Estado: **' + audit.state + '**',
       '- Disparos automáticos: ' + audit.samples,
+      '- Primer disparo observado: ' + (audit.firstRun ?
+        '[' + audit.firstRun.createdAt + '](https://github.com/' + repo + '/actions/runs/' + audit.firstRun.id + ')' : 'sin datos'),
+      '- Último disparo observado: ' + (audit.lastRun ?
+        '[' + audit.lastRun.createdAt + '](https://github.com/' + repo + '/actions/runs/' + audit.lastRun.id + ')' : 'sin datos'),
       '- Intervalos >15 minutos: ' + audit.gaps,
       '- Máximo intervalo observado: ' + (audit.maxGapMinutes ?? 'sin datos') + ' minutos',
       '- Historial completo: ' + audit.historyComplete,
@@ -56,9 +60,14 @@ try {
     ];
     if (audit.largestGap) {
       rows.push('- Mayor hueco: ' + audit.largestGap.older + ' → ' + audit.largestGap.newer);
-      rows.push('- Ejecuciones: https://github.com/' + repo + '/actions/runs/' +
-        audit.largestGap.olderRunId + ' y https://github.com/' + repo + '/actions/runs/' +
-        audit.largestGap.newerRunId);
+    }
+    if (audit.gapDetails?.length) {
+      rows.push('', '### Todos los intervalos >15 minutos', '');
+      for (const gap of audit.gapDetails) {
+        rows.push('- ' + gap.older + ' → ' + gap.newer + ' (' + gap.minutes + ' min): ' +
+          '[anterior](https://github.com/' + repo + '/actions/runs/' + gap.olderRunId + ') · ' +
+          '[posterior](https://github.com/' + repo + '/actions/runs/' + gap.newerRunId + ')');
+      }
     }
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, rows.join('\n') + '\n');
   }

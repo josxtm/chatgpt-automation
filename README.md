@@ -55,6 +55,7 @@ Los nombres de `required_checks` deben coincidir exactamente con los nombres de 
 - Un check ausente, ambiguo o duplicado **nunca** se considera verde.
 - El cron de GitHub no garantiza ejecución exacta cada diez minutos.
 - No se realizan fusiones automáticas.
+- Si la configuración no contiene ningún repositorio habilitado, el supervisor **falla** en lugar de terminar en verde sin inspeccionar nada; las entradas deshabilitadas se siguen permitiendo cuando queda al menos un repositorio activo.
 - Antes de permitir acciones de escritura: verificar protección de ramas, identidad de commits, permisos y límites de reintentos.
 
 ## Migración
@@ -64,6 +65,13 @@ La implementación antigua de Cloudflare Worker y D1 permanece en el historial y
 ## Pruebas
 
 Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en GitHub.
+
+El CI también valida la sintaxis de **todos** los workflows `.github/workflows/*.yml`
+con `actionlint` v1.7.12, descargado desde su release oficial y verificado con
+SHA-256 fijo. Esto detecta YAML o expresiones de Actions inválidas antes de
+fusionar, incluso si las pruebas de Node pasan. La validación no requiere permisos
+de escritura ni activa Cloudflare; no sustituye la verificación de los disparos
+reales `schedule` después de la fusión.
 
 ## v0.7 — Diagnóstico del cron en el resumen (integrado en main)
 
@@ -121,7 +129,7 @@ Si el enlace de Actions basado en `supervisor.yml` devuelve **404** aunque el ar
 - **Política:** no activar Cloudflare, no ampliar permisos ni fusionar automáticamente; exigir `Supervisor CI` verde para el commit exacto de cualquier PR candidato. La auditoría y el mecanismo de recuperación se validan por separado.
 
 
-## Recuperación consolidada (pendiente de fusión manual)
+## Recuperación consolidada (integrada en `main`; validación operativa pendiente)
 
 `supervisor-recovery.yml` ofrece oportunidades adicionales en minutos 08, 18,
 28, 38, 48 y 58, y tras finalizar Supervisor CI en main. Solo llama al workflow
@@ -151,3 +159,11 @@ ningún evento, la recuperación solo con Actions no puede garantizar un máximo
 Ver [auditoría y matriz de consolidación](docs/AUDIT-2026-10-30.md).
 
 Guía de activación, primeras 24 horas y reversión: [PRODUCTION.md](docs/PRODUCTION.md).
+
+### Evidencia inicial tras la integración del PR #30
+
+- El PR #30 se fusionó en `main` con el commit `03fb87c27b8fd26ad640a6d66b3144134fbe9d29` el 30 de octubre de 2026 a las 19:16 UTC.
+- `Supervisor CI` terminó correctamente en la [ejecución 41113900643](https://github.com/josxtm/chatgpt-automation/actions/runs/41113900643) y la recuperación por `workflow_run` en la [41113927799](https://github.com/josxtm/chatgpt-automation/actions/runs/41113927799).
+- Se observó un `schedule` posterior a la fusión, con inspección efectiva y resultado correcto: [ejecución 41125237552](https://github.com/josxtm/chatgpt-automation/actions/runs/41125237552), iniciada el 30 de octubre de 2026 a las 20:41:55 UTC. Esto acredita **un disparo**, no periodicidad sostenida.
+- El `schedule` anterior conocido [41085928702](https://github.com/josxtm/chatgpt-automation/actions/runs/41085928702) comenzó a las 16:00:35 UTC, antes de la fusión; **no atribuir a la versión nueva el hueco entre ambas ejecuciones**. La validación de 24 horas debe usar exclusivamente eventos posteriores a la fusión para evaluar la versión consolidada y distinguir los disparos nativos de las recuperaciones.
+- No fusionar nuevos cambios operativos ni declarar estabilidad hasta cerrar la ventana de observación, revisar los huecos reales, los recibos de inspección y la idempotencia. GitHub Actions sigue siendo un planificador sin garantía de puntualidad.

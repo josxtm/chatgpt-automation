@@ -25,7 +25,7 @@ test('interrupted, failed, skipped or CI steps never become receipts', async () 
   assert.equal(await shouldInspect(api({ runs: [{ ...run, status: 'in_progress' }], steps: [receipt] }), context), true);
 });
 test('expired receipt and exact ten-minute boundary allow a fresh inspection', async () => {
-  assert.equal(await shouldInspect(api({ steps: [{ ...receipt, completed_at: '2026-10-30T17:50:00Z' }] }), context), true);
+  assert.equal(await shouldInspect(api({ runs: [{ ...run, created_at: '2026-10-30T17:49:00Z' }], steps: [{ ...receipt, completed_at: '2026-10-30T17:50:00Z' }] }), context), true);
 });
 test('receipts from the fallback workflow also prevent duplicate native work', async () => {
   const get = async path => path.includes('/supervisor.yml/') ?

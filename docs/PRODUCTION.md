@@ -1,10 +1,23 @@
-# Activación y reversión de la versión consolidada
+# Producción: verificación operativa y reversión de la versión consolidada
 
-## Condiciones previas
+## Estado de despliegue (actualizado el 2026-10-31)
 
-Revisar manualmente PR #30 y Supervisor CI verde en su SHA final. No integrar
-además #18–#29: sus mejoras están consolidadas; dejarlos abiertos hasta que su
-cierre sea autorizado. #10 es obsoleto y no debe fusionarse.
+El [PR #30](https://github.com/josxtm/chatgpt-automation/pull/30) **ya está
+fusionado** en `main` desde el **2026-10-30 19:16:30 UTC**, commit
+`03fb87c27b8fd26ad640a6d66b3144134fbe9d29`. No volver a ejecutar
+las instrucciones de fusión como si el despliegue estuviera pendiente.
+
+La ventana de observación postintegración es
+**[2026-10-30T19:16:30Z, 2026-10-31T19:16:30Z)**. La auditoría independiente
+del cron anterior al despliegue se documenta en el
+[PR #35](https://github.com/josxtm/chatgpt-automation/pull/35) (en revisión);
+no debe confundirse con la validación de esta nueva versión.
+
+## Condiciones de seguridad
+
+No integrar además los PR #18–#29: sus mejoras ya están consolidadas; dejarlos
+abiertos hasta que su cierre sea autorizado. El PR #10 es obsoleto y no debe
+fusionarse. No fusionar automáticamente los PR de documentación o mantenimiento.
 
 El alcance sigue siendo exclusivamente `josxtm/chatgpt-automation`, con el check
 `test`. No cambia configuración, ramas ni credenciales de MyCAD, CADCraft o
@@ -15,16 +28,22 @@ abarcar los repositorios expresamente autorizados. No imprimirlo al comprobarlo.
 Las políticas administrativas, cuotas y permisos reales de un token opcional
 requieren revisión del propietario si la integración no permite consultarlos.
 
-## Activación manual
+## Verificación posterior a la integración (sin nuevas fusiones)
 
-1. Fusionar PR #30 manualmente, después de comprobar de nuevo el SHA y CI.
-   Registrar el SHA de main anterior, el commit de integración y la hora UTC T0.
+1. Confirmar que `main` sigue apuntando al commit de integración registrado
+   o a un descendiente conocido, y comprobar `Supervisor CI` para ese SHA.
+   Usar como T0 **2026-10-30T19:16:30Z**. No repetir la fusión del PR #30.
 2. Comprobar Supervisor CI de main. `Supervisor Recovery` debe aparecer activo;
    su evento workflow_run solo admite CI originado por push o workflow_dispatch
    en main y en este repositorio. No admite CI de PR, tampoco pull_request_target.
-3. Ejecutar manualmente Supervisor Recovery desde main para registrar y probar
-   el workflow nuevo. Si la API del workflow todavía devuelve 404, esperar a su
-   registro en Actions y repetir. El gate falla cerrado, no supone historial vacío.
+3. Revisar primero las ejecuciones reales ya observadas:
+   [Supervisor CI #41113900643](https://github.com/josxtm/chatgpt-automation/actions/runs/41113900643),
+   [Recovery #41113927799](https://github.com/josxtm/chatgpt-automation/actions/runs/41113927799)
+   por `workflow_run`, y
+   [Recovery #41141993763](https://github.com/josxtm/chatgpt-automation/actions/runs/41141993763)
+   por `schedule`. Si se necesita otra prueba manual, ejecutar Supervisor
+   Recovery desde `main`; no confundirla con una prueba de puntualidad del cron.
+   Si la API devuelve 404, comprobar registro y permisos antes de reintentar.
 4. Comprobar que al menos una inspección real termina correctamente. Un run
    verde con inspección omitida solo acredita supresión de trabajo reciente.
 5. Lanzar una segunda ejecución manual cercana: debe mostrar recibo reciente e
@@ -106,3 +125,114 @@ Ejecutar npm test, actionlint y Supervisor CI antes de fusionarlo manualmente.
 Rehabilitar el principal tras restaurarlo y comprobar una ejecución manual.
 La versión anterior tenía grandes huecos de cron; revertir no los soluciona.
 No hay datos persistentes, migraciones ni recursos externos que deshacer.
+
+## Evidencia intermedia del cron tras PR #30 (31/10/2026, consulta ~14:30 UTC)
+
+**La ventana de 24 horas posterior al PR #30 aún no ha cerrado** (termina
+2026-10-31T19:16:30Z). Esta observación es parcial y no sustituye a la
+auditoría final. Se consultó el historial real de GitHub Actions filtrando
+`event=schedule`, distinguiendo el workflow principal (399940933) del
+auxiliar (402150396).
+
+Disparos nativos del **principal** posteriores a la integración:
+
+| Inicio UTC | Run | Resultado |
+| --- | --- | --- |
+| 2026-10-30 20:41:55 | [41125237552](https://github.com/josxtm/chatgpt-automation/actions/runs/41125237552) | success |
+| 2026-10-31 00:09:09 | [41148572399](https://github.com/josxtm/chatgpt-automation/actions/runs/41148572399) | success |
+| 2026-10-31 05:47:36 | [41173986877](https://github.com/josxtm/chatgpt-automation/actions/runs/41173986877) | success |
+| 2026-10-31 11:22:11 | [41196573260](https://github.com/josxtm/chatgpt-automation/actions/runs/41196573260) | success |
+
+Los tres intervalos observados son **3 h 27 min 14 s**,
+**5 h 38 min 27 s** y **5 h 34 min 35 s**: todos superan el
+umbral de 15 minutos. El último run nativo observado fue a las 11:22:11 UTC,
+sin disparos posteriores visibles en la consulta. No interpretar un resultado
+`success` como evidencia de cadencia saludable.
+
+El **auxiliar** también presentó intervalos prolongados entre disparos
+`schedule`: [41141993763](https://github.com/josxtm/chatgpt-automation/actions/runs/41141993763)
+(2026-10-30 23:02:36 UTC),
+[41159271662](https://github.com/josxtm/chatgpt-automation/actions/runs/41159271662)
+(2026-10-31 02:16:50 UTC) y
+[41185046844](https://github.com/josxtm/chatgpt-automation/actions/runs/41185046844)
+(2026-10-31 08:32:50 UTC). No confundirlos con el principal ni con
+`workflow_run` de CI.
+
+**Diagnóstico:** el CI del PR #47 está verde para
+`79fded0aa92e2bfbdb8208a4e4d3baab52a62bd2`, pero el código de ese PR
+no está desplegado en `main`. Los disparos observados ejecutan
+`03fb87c27b8fd26ad640a6d66b3144134fbe9d29`. No atribuir los huecos
+a cambios todavía no integrados. No hay fallo de test demostrado; el problema
+operativo pendiente es la emisión irregular de eventos `schedule`.
+Mantener las salvaguardas de solo lectura y esperar al cierre de ventana para
+la auditoría definitiva.
+
+
+## Actualización de evidencia del cron (31/10/2026, 16:42 UTC)
+
+Tras la observación intermedia anterior, el supervisor principal registró un
+nuevo disparo nativo `schedule`:
+
+- [Run 41218701553](https://github.com/josxtm/chatgpt-automation/actions/runs/41218701553),
+  creado el **2026-10-31T16:14:17Z**, `success`, SHA
+  `03fb87c27b8fd26ad640a6d66b3144134fbe9d29`.
+- El intervalo desde el disparo anterior de las 11:22:11 UTC fue
+  **4 h 52 min 06 s**, muy superior al umbral de 15 minutos.
+- La inspección de repositorios terminó correctamente; esto no acredita
+  una cadencia periódica estable.
+- El auxiliar registró [run 41211407785](https://github.com/josxtm/chatgpt-automation/actions/runs/41211407785)
+  a las **14:42:55 UTC**, también `success`. Sus disparos se contabilizan
+  por separado y no corrigen los huecos del cron principal.
+
+La ventana completa posterior al PR #30 termina a las
+**2026-10-31T19:16:30Z**. No declarar completada la auditoría ni
+atribuir al PR #47 (aún sin integrar) el comportamiento de `main`.
+
+
+## Seguimiento intermedio (31/10/2026, consulta 18:01 UTC)
+
+La consulta de la colección de ejecuciones de GitHub Actions (ordenada por
+creación, sin sustituir `schedule` por CI) no mostró nuevos disparos
+programados después de:
+
+- Principal: [41218701553](https://github.com/josxtm/chatgpt-automation/actions/runs/41218701553),
+  **16:14:17 UTC**, `schedule`, `success`.
+- Auxiliar: [41211407785](https://github.com/josxtm/chatgpt-automation/actions/runs/41211407785),
+  **14:42:55 UTC**, `schedule`, `success`.
+
+A las 18:01 UTC el silencio observado era de **al menos 1 h 46 min** para el
+principal y **3 h 18 min** para el auxiliar. Son silencios abiertos, no
+intervalos entre dos runs; no deben sumarse al recuento de huecos cerrados.
+La última ejecución de Supervisor CI del candidato #47,
+[41221061064](https://github.com/josxtm/chatgpt-automation/actions/runs/41221061064),
+con SHA `c3da61d2ba25eba3e75983fe51a4876606a91915`, finalizó correctamente
+(incluido `actionlint v1.7.12`), pero **no acredita la periodicidad**.
+
+La ventana de 24 horas sigue abierta hasta las **19:16:30 UTC**. El informe
+final debe consultar de nuevo los disparos y validar la completitud del
+historial; este registro no sustituye la auditoría definitiva.
+
+
+## Comprobación de cobertura real (31/10/2026, 18:50 UTC; ventana abierta)
+
+Consulta directa a GitHub Actions de ejecuciones con evento `schedule`,
+posteriores a T0=2026-10-30T19:16:30Z. **Todavía no es la auditoría final**:
+el cierre está fijado en 2026-10-31T19:16:30Z. No contabilizar
+`pull_request`, `push` ni `workflow_run` como cron nativo.
+
+- **Principal:** cinco disparos `schedule`, todos `success`. Cuatro huecos
+  consecutivos >15 min: **3h27m14s**, **5h38m27s**, **5h34m35s** y
+  **4h52m06s**. Último: [#41218701553](https://github.com/josxtm/chatgpt-automation/actions/runs/41218701553),
+  2026-10-31T16:14:17Z; su paso de inspección terminó `success`.
+- **Recuperación:** cinco disparos `schedule`, todos `success`. Cuatro
+  huecos >15 min: **3h14m14s**, **6h16m00s**, **6h10m05s** y
+  **4h06m29s**. Último: [#41231263667](https://github.com/josxtm/chatgpt-automation/actions/runs/41231263667),
+  2026-10-31T18:49:24Z. Su paso `Inspect configured repositories (read-only)`
+  terminó correctamente a las 18:49:37Z: **recuperación real**, no gate omitido.
+- La inspección auxiliar de las 18:49Z **no** elimina los huecos del cron
+  principal. Los dos workflows siguen dependiendo de los eventos programados
+  de GitHub. La corrección consolidada del PR #47 no está desplegada en main.
+
+Al cerrar la ventana, volver a consultar y paginar el historial, verificar
+su integridad y ejecutar `scripts/audit-schedule.mjs` con los límites exactos.
+No declarar cumplido un SLA de 15 minutos ni modificar producción por un CI verde.
