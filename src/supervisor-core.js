@@ -18,14 +18,31 @@ export function validateRepositories(config) {
   });
 }
 
+// An empty inspection is not a successful supervision cycle.
+// Disabled repositories are valid entries, but at least one must be active.
+export function enabledRepositories(config) {
+  const enabled = validateRepositories(config).filter(entry => entry.enabled);
+  if (enabled.length === 0) throw new Error('No enabled repositories: refusing an empty successful inspection');
+  return enabled;
+}
+
 export async function fetchPages(get, path, key, maxPages = 10) {
   const results = [];
+  let expectedTotal = null;
   for (let page = 1; page <= maxPages; page++) {
     const sep = path.includes('?') ? '&' : '?';
     const data = await get(path + sep + 'per_page=100&page=' + page);
     const batch = key ? data?.[key] : data;
     if (!Array.isArray(batch)) throw new Error('Invalid API page');
-    if (key && (!Number.isSafeInteger(data.total_count) || data.total_count < 0)) throw new Error('Missing total_count');
+    if (key) {
+      if (!Number.isSafeInteger(data.total_count) || data.total_count < 0) throw new Error('Missing total_count');
+      // A changing total between pages is not a coherent check-run snapshot.
+      // Never report green from a mixed or incomplete pagination window.
+      if (expectedTotal !== null && data.total_count !== expectedTotal) {
+        throw new Error('Inconsistent total_count across check pages');
+      }
+      expectedTotal = data.total_count;
+    }
     results.push(...batch);
     if (key && results.length > data.total_count) throw new Error('Inconsistent total_count');
     if (batch.length < 100) {

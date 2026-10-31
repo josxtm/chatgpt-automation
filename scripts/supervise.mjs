@@ -5,18 +5,14 @@ const summary = ['# Multiproject Supervisor', '', '- Inicio (UTC): ' + started, 
 function report(line) { summary.push(line); console.log(line); }
 function publish() { if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary.join('\n') + '\n'); }
 process.on('exit', publish);
-import { validateRepositories, inspectRepository } from '../src/supervisor-core.js';
+import { enabledRepositories, inspectRepository } from '../src/supervisor-core.js';
 import { createGithubGet } from '../src/github-api.js';
 import { prSummaryRows } from '../src/summary.js';
 import { assessScheduleHistory, assessScheduleCadence, assessScheduleRevision } from '../src/schedule-health.js';
 import { assessWorkflowState, scheduleDiagnosticHint, cadenceDiagnosticHint, scheduleSilenceHint, workflowActionsLink } from '../src/workflow-state.js';
 
 const config = JSON.parse(readFileSync(new URL('../supervisor.config.json', import.meta.url)));
-const repositories = validateRepositories(config).filter(entry => entry.enabled);
-if (!repositories.length) {
-  report('No hay repositorios habilitados.');
-  process.exit(0);
-}
+const repositories = enabledRepositories(config);
 if (!process.env.GH_TOKEN) throw new Error('GH_TOKEN missing: configure SUPERVISOR_GITHUB_TOKEN for other/private repositories');
 const get = createGithubGet(process.env.GH_TOKEN);
 // A manual green run does not prove that GitHub's cron is firing.
