@@ -166,3 +166,24 @@ a cambios todavía no integrados. No hay fallo de test demostrado; el problema
 operativo pendiente es la emisión irregular de eventos `schedule`.
 Mantener las salvaguardas de solo lectura y esperar al cierre de ventana para
 la auditoría definitiva.
+
+
+## Actualización de evidencia del cron (31/10/2026, 16:42 UTC)
+
+Tras la observación intermedia anterior, el supervisor principal registró un
+nuevo disparo nativo `schedule`:
+
+- [Run 41218701553](https://github.com/josxtm/chatgpt-automation/actions/runs/41218701553),
+  creado el **2026-10-31T16:14:17Z**, `success`, SHA
+  `03fb87c27b8fd26ad640a6d66b3144134fbe9d29`.
+- El intervalo desde el disparo anterior de las 11:22:11 UTC fue
+  **4 h 52 min 06 s**, muy superior al umbral de 15 minutos.
+- La inspección de repositorios terminó correctamente; esto no acredita
+  una cadencia periódica estable.
+- El auxiliar registró [run 41211407785](https://github.com/josxtm/chatgpt-automation/actions/runs/41211407785)
+  a las **14:42:55 UTC**, también `success`. Sus disparos se contabilizan
+  por separado y no corrigen los huecos del cron principal.
+
+La ventana completa posterior al PR #30 termina a las
+**2026-10-31T19:16:30Z**. No declarar completada la auditoría ni
+atribuir al PR #47 (aún sin integrar) el comportamiento de `main`.
