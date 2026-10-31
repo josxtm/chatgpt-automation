@@ -46,6 +46,10 @@ try {
       '- Ventana UTC: ' + audit.start + ' → ' + audit.end,
       '- Estado: **' + audit.state + '**',
       '- Disparos automáticos: ' + audit.samples,
+      '- Primer disparo observado: ' + (audit.firstRun ?
+        '[' + audit.firstRun.createdAt + '](https://github.com/' + repo + '/actions/runs/' + audit.firstRun.id + ')' : 'sin datos'),
+      '- Último disparo observado: ' + (audit.lastRun ?
+        '[' + audit.lastRun.createdAt + '](https://github.com/' + repo + '/actions/runs/' + audit.lastRun.id + ')' : 'sin datos'),
       '- Intervalos >15 minutos: ' + audit.gaps,
       '- Máximo intervalo observado: ' + (audit.maxGapMinutes ?? 'sin datos') + ' minutos',
       '- Historial completo: ' + audit.historyComplete,
