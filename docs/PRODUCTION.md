@@ -211,3 +211,28 @@ con SHA `c3da61d2ba25eba3e75983fe51a4876606a91915`, finalizó correctamente
 La ventana de 24 horas sigue abierta hasta las **19:16:30 UTC**. El informe
 final debe consultar de nuevo los disparos y validar la completitud del
 historial; este registro no sustituye la auditoría definitiva.
+
+
+## Comprobación de cobertura real (31/10/2026, 18:50 UTC; ventana abierta)
+
+Consulta directa a GitHub Actions de ejecuciones con evento `schedule`,
+posteriores a T0=2026-10-30T19:16:30Z. **Todavía no es la auditoría final**:
+el cierre está fijado en 2026-10-31T19:16:30Z. No contabilizar
+`pull_request`, `push` ni `workflow_run` como cron nativo.
+
+- **Principal:** cinco disparos `schedule`, todos `success`. Cuatro huecos
+  consecutivos >15 min: **3h27m14s**, **5h38m27s**, **5h34m35s** y
+  **4h52m06s**. Último: [#41218701553](https://github.com/josxtm/chatgpt-automation/actions/runs/41218701553),
+  2026-10-31T16:14:17Z; su paso de inspección terminó `success`.
+- **Recuperación:** cinco disparos `schedule`, todos `success`. Cuatro
+  huecos >15 min: **3h14m14s**, **6h16m00s**, **6h10m05s** y
+  **4h06m29s**. Último: [#41231263667](https://github.com/josxtm/chatgpt-automation/actions/runs/41231263667),
+  2026-10-31T18:49:24Z. Su paso `Inspect configured repositories (read-only)`
+  terminó correctamente a las 18:49:37Z: **recuperación real**, no gate omitido.
+- La inspección auxiliar de las 18:49Z **no** elimina los huecos del cron
+  principal. Los dos workflows siguen dependiendo de los eventos programados
+  de GitHub. La corrección consolidada del PR #47 no está desplegada en main.
+
+Al cerrar la ventana, volver a consultar y paginar el historial, verificar
+su integridad y ejecutar `scripts/audit-schedule.mjs` con los límites exactos.
+No declarar cumplido un SLA de 15 minutos ni modificar producción por un CI verde.
