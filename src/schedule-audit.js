@@ -93,8 +93,13 @@ export function auditScheduleWindow(runs, options = {}) {
     selected.length < 2 ? 'insufficient-data' :
     gaps ? 'gaps' : boundaryGaps ? 'boundary-gaps' : 'no-large-gaps';
   const round = value => Math.round(value * 10) / 10;
+  const first = selected.at(-1);
+  const last = selected[0];
   return {
     state,
+    // Expose the real endpoints of the observed sample, never inferred ticks.
+    firstRun: first ? { id: first.id, createdAt: new Date(first.timestamp).toISOString() } : null,
+    lastRun: last ? { id: last.id, createdAt: new Date(last.timestamp).toISOString() } : null,
     start: new Date(from).toISOString(),
     end: new Date(to).toISOString(),
     historyComplete: complete,
