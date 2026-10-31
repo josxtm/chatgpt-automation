@@ -125,3 +125,44 @@ Ejecutar npm test, actionlint y Supervisor CI antes de fusionarlo manualmente.
 Rehabilitar el principal tras restaurarlo y comprobar una ejecución manual.
 La versión anterior tenía grandes huecos de cron; revertir no los soluciona.
 No hay datos persistentes, migraciones ni recursos externos que deshacer.
+
+## Evidencia intermedia del cron tras PR #30 (31/10/2026, consulta ~14:30 UTC)
+
+**La ventana de 24 horas posterior al PR #30 aún no ha cerrado** (termina
+2026-10-31T19:16:30Z). Esta observación es parcial y no sustituye a la
+auditoría final. Se consultó el historial real de GitHub Actions filtrando
+`event=schedule`, distinguiendo el workflow principal (399940933) del
+auxiliar (402150396).
+
+Disparos nativos del **principal** posteriores a la integración:
+
+| Inicio UTC | Run | Resultado |
+| --- | --- | --- |
+| 2026-10-30 20:41:55 | [41125237552](https://github.com/josxtm/chatgpt-automation/actions/runs/41125237552) | success |
+| 2026-10-31 00:09:09 | [41148572399](https://github.com/josxtm/chatgpt-automation/actions/runs/41148572399) | success |
+| 2026-10-31 05:47:36 | [41173986877](https://github.com/josxtm/chatgpt-automation/actions/runs/41173986877) | success |
+| 2026-10-31 11:22:11 | [41196573260](https://github.com/josxtm/chatgpt-automation/actions/runs/41196573260) | success |
+
+Los tres intervalos observados son **3 h 27 min 14 s**,
+**5 h 38 min 27 s** y **5 h 34 min 35 s**: todos superan el
+umbral de 15 minutos. El último run nativo observado fue a las 11:22:11 UTC,
+sin disparos posteriores visibles en la consulta. No interpretar un resultado
+`success` como evidencia de cadencia saludable.
+
+El **auxiliar** también presentó intervalos prolongados entre disparos
+`schedule`: [41141993763](https://github.com/josxtm/chatgpt-automation/actions/runs/41141993763)
+(2026-10-30 23:02:36 UTC),
+[41159271662](https://github.com/josxtm/chatgpt-automation/actions/runs/41159271662)
+(2026-10-31 02:16:50 UTC) y
+[41185046844](https://github.com/josxtm/chatgpt-automation/actions/runs/41185046844)
+(2026-10-31 08:32:50 UTC). No confundirlos con el principal ni con
+`workflow_run` de CI.
+
+**Diagnóstico:** el CI del PR #47 está verde para
+`79fded0aa92e2bfbdb8208a4e4d3baab52a62bd2`, pero el código de ese PR
+no está desplegado en `main`. Los disparos observados ejecutan
+`03fb87c27b8fd26ad640a6d66b3144134fbe9d29`. No atribuir los huecos
+a cambios todavía no integrados. No hay fallo de test demostrado; el problema
+operativo pendiente es la emisión irregular de eventos `schedule`.
+Mantener las salvaguardas de solo lectura y esperar al cierre de ventana para
+la auditoría definitiva.
