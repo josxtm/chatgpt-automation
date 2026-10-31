@@ -187,3 +187,27 @@ nuevo disparo nativo `schedule`:
 La ventana completa posterior al PR #30 termina a las
 **2026-10-31T19:16:30Z**. No declarar completada la auditoría ni
 atribuir al PR #47 (aún sin integrar) el comportamiento de `main`.
+
+
+## Seguimiento intermedio (31/10/2026, consulta 18:01 UTC)
+
+La consulta de la colección de ejecuciones de GitHub Actions (ordenada por
+creación, sin sustituir `schedule` por CI) no mostró nuevos disparos
+programados después de:
+
+- Principal: [41218701553](https://github.com/josxtm/chatgpt-automation/actions/runs/41218701553),
+  **16:14:17 UTC**, `schedule`, `success`.
+- Auxiliar: [41211407785](https://github.com/josxtm/chatgpt-automation/actions/runs/41211407785),
+  **14:42:55 UTC**, `schedule`, `success`.
+
+A las 18:01 UTC el silencio observado era de **al menos 1 h 46 min** para el
+principal y **3 h 18 min** para el auxiliar. Son silencios abiertos, no
+intervalos entre dos runs; no deben sumarse al recuento de huecos cerrados.
+La última ejecución de Supervisor CI del candidato #47,
+[41221061064](https://github.com/josxtm/chatgpt-automation/actions/runs/41221061064),
+con SHA `c3da61d2ba25eba3e75983fe51a4876606a91915`, finalizó correctamente
+(incluido `actionlint v1.7.12`), pero **no acredita la periodicidad**.
+
+La ventana de 24 horas sigue abierta hasta las **19:16:30 UTC**. El informe
+final debe consultar de nuevo los disparos y validar la completitud del
+historial; este registro no sustituye la auditoría definitiva.
