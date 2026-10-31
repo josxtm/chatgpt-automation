@@ -18,6 +18,14 @@ export function validateRepositories(config) {
   });
 }
 
+// An empty inspection is not a successful supervision cycle.
+// Disabled repositories are valid entries, but at least one must be active.
+export function enabledRepositories(config) {
+  const enabled = validateRepositories(config).filter(entry => entry.enabled);
+  if (enabled.length === 0) throw new Error('No enabled repositories: refusing an empty successful inspection');
+  return enabled;
+}
+
 export async function fetchPages(get, path, key, maxPages = 10) {
   const results = [];
   for (let page = 1; page <= maxPages; page++) {
