@@ -40,10 +40,10 @@ jobs:
               echo '- Scheduled trigger observed: no (manual or other event)'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
       - name: Check successful inspection receipts
