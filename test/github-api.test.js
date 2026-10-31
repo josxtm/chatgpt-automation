@@ -53,3 +53,53 @@ test('GitHub getter rejects invalid configuration and paths', async () => {
   const get = createGithubGet('token', { fetchImpl: async () => { throw new Error('must not fetch'); } });
   await assert.rejects(get('https://example.com/'), /Invalid GitHub API path/);
 });
+
+test('GitHub getter rejects redirects rather than forwarding authenticated requests', async () => {
+  let requestOptions;
+  const get = createGithubGet('secret-not-for-logs', {
+    fetchImpl: async (_url, options) => {
+      requestOptions = options;
+      return { ok: true, redirected: true, json: async () => ({}) };
+    }
+  });
+  await assert.rejects(get('/repos/owner/repo/pulls'), error => {
+    assert.match(error.message, /GitHub API redirect rejected/);
+    assert.doesNotMatch(error.message, /secret-not-for-logs/);
+    return true;
+  });
+  assert.equal(requestOptions.redirect, 'error', 'native fetch must not follow redirects');
+  assert.equal(requestOptions.method, undefined, 'request must remain read-only GET');
+});
+
+test('GitHub getter rejects traversal, encoded separators and ambiguous paths before fetch', async () => {
+  let requests = 0;
+  const get = createGithubGet('test-token', {
+    fetchImpl: async () => {
+      requests++;
+      return { ok: true, json: async () => ({ ok: true }) };
+    }
+  });
+  const invalid = [
+    '/repos/owner/repo/../../user',
+    '/repos/owner/repo/./pulls',
+    '/repos/owner/repo/%2e%2e/user',
+    '/repos/owner/repo/%2fuser',
+    '/repos/owner/repo/%255cuser',
+    '/repos/owner/repo\\..\\user',
+    '/repos/owner/repo//pulls',
+    '/repos/owner/repo/pulls#fragment',
+    '/repos/owner/repo/pulls\nAuthorization: Bearer injected',
+    '/repos/owner',
+    '/repos//repo/pulls'
+  ];
+  for (const path of invalid) {
+    await assert.rejects(get(path), /Invalid GitHub API path/, path);
+  }
+  assert.equal(requests, 0, 'invalid paths must not send an authenticated request');
+  assert.deepEqual(
+    await get('/repos/owner/repo/actions/workflows/supervisor.yml/runs?branch=main&per_page=100&page=1'),
+    { ok: true },
+    'normal read-only paginated API requests must still work'
+  );
+  assert.equal(requests, 1);
+});
