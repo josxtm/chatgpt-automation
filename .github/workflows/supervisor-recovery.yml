@@ -15,11 +15,13 @@ permissions:
 jobs:
   recover:
     # Never execute PR code, download artifacts or inherit a PR's credentials.
+    # Ignore stale CI completions: workflow_run uses the default-branch SHA.
     if: >-
       github.ref == 'refs/heads/main' &&
       (github.event_name != 'workflow_run' ||
        (github.event.workflow_run.head_repository.full_name == github.repository &&
         github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_sha == github.sha &&
         contains(fromJSON('["push","workflow_dispatch"]'), github.event.workflow_run.event)))
     uses: ./.github/workflows/supervisor.yml
     secrets:
