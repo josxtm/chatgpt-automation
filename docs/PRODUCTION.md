@@ -1,10 +1,23 @@
-# Activación y reversión de la versión consolidada
+# Producción: verificación operativa y reversión de la versión consolidada
 
-## Condiciones previas
+## Estado de despliegue (actualizado el 2026-10-31)
 
-Revisar manualmente PR #30 y Supervisor CI verde en su SHA final. No integrar
-además #18–#29: sus mejoras están consolidadas; dejarlos abiertos hasta que su
-cierre sea autorizado. #10 es obsoleto y no debe fusionarse.
+El [PR #30](https://github.com/josxtm/chatgpt-automation/pull/30) **ya está
+fusionado** en `main` desde el **2026-10-30 19:16:30 UTC**, commit
+`03fb87c27b8fd26ad640a6d66b3144134fbe9d29`. No volver a ejecutar
+las instrucciones de fusión como si el despliegue estuviera pendiente.
+
+La ventana de observación postintegración es
+**[2026-10-30T19:16:30Z, 2026-10-31T19:16:30Z)**. La auditoría independiente
+del cron anterior al despliegue se documenta en el
+[PR #35](https://github.com/josxtm/chatgpt-automation/pull/35) (en revisión);
+no debe confundirse con la validación de esta nueva versión.
+
+## Condiciones de seguridad
+
+No integrar además los PR #18–#29: sus mejoras ya están consolidadas; dejarlos
+abiertos hasta que su cierre sea autorizado. El PR #10 es obsoleto y no debe
+fusionarse. No fusionar automáticamente los PR de documentación o mantenimiento.
 
 El alcance sigue siendo exclusivamente `josxtm/chatgpt-automation`, con el check
 `test`. No cambia configuración, ramas ni credenciales de MyCAD, CADCraft o
@@ -15,16 +28,22 @@ abarcar los repositorios expresamente autorizados. No imprimirlo al comprobarlo.
 Las políticas administrativas, cuotas y permisos reales de un token opcional
 requieren revisión del propietario si la integración no permite consultarlos.
 
-## Activación manual
+## Verificación posterior a la integración (sin nuevas fusiones)
 
-1. Fusionar PR #30 manualmente, después de comprobar de nuevo el SHA y CI.
-   Registrar el SHA de main anterior, el commit de integración y la hora UTC T0.
+1. Confirmar que `main` sigue apuntando al commit de integración registrado
+   o a un descendiente conocido, y comprobar `Supervisor CI` para ese SHA.
+   Usar como T0 **2026-10-30T19:16:30Z**. No repetir la fusión del PR #30.
 2. Comprobar Supervisor CI de main. `Supervisor Recovery` debe aparecer activo;
    su evento workflow_run solo admite CI originado por push o workflow_dispatch
    en main y en este repositorio. No admite CI de PR, tampoco pull_request_target.
-3. Ejecutar manualmente Supervisor Recovery desde main para registrar y probar
-   el workflow nuevo. Si la API del workflow todavía devuelve 404, esperar a su
-   registro en Actions y repetir. El gate falla cerrado, no supone historial vacío.
+3. Revisar primero las ejecuciones reales ya observadas:
+   [Supervisor CI #41113900643](https://github.com/josxtm/chatgpt-automation/actions/runs/41113900643),
+   [Recovery #41113927799](https://github.com/josxtm/chatgpt-automation/actions/runs/41113927799)
+   por `workflow_run`, y
+   [Recovery #41141993763](https://github.com/josxtm/chatgpt-automation/actions/runs/41141993763)
+   por `schedule`. Si se necesita otra prueba manual, ejecutar Supervisor
+   Recovery desde `main`; no confundirla con una prueba de puntualidad del cron.
+   Si la API devuelve 404, comprobar registro y permisos antes de reintentar.
 4. Comprobar que al menos una inspección real termina correctamente. Un run
    verde con inspección omitida solo acredita supresión de trabajo reciente.
 5. Lanzar una segunda ejecución manual cercana: debe mostrar recibo reciente e
