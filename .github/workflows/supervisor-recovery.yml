@@ -20,6 +20,8 @@ jobs:
       (github.event_name != 'workflow_run' ||
        (github.event.workflow_run.head_repository.full_name == github.repository &&
         github.event.workflow_run.head_branch == 'main' &&
+        # workflow_run uses the current default-branch SHA; ignore obsolete CI runs.
+        github.event.workflow_run.head_sha == github.sha &&
         contains(fromJSON('["push","workflow_dispatch"]'), github.event.workflow_run.event)))
     uses: ./.github/workflows/supervisor.yml
     secrets:
