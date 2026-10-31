@@ -53,3 +53,20 @@ test('GitHub getter rejects invalid configuration and paths', async () => {
   const get = createGithubGet('token', { fetchImpl: async () => { throw new Error('must not fetch'); } });
   await assert.rejects(get('https://example.com/'), /Invalid GitHub API path/);
 });
+
+test('GitHub getter rejects redirects rather than forwarding authenticated requests', async () => {
+  let requestOptions;
+  const get = createGithubGet('secret-not-for-logs', {
+    fetchImpl: async (_url, options) => {
+      requestOptions = options;
+      return { ok: true, redirected: true, json: async () => ({}) };
+    }
+  });
+  await assert.rejects(get('/repos/owner/repo/pulls'), error => {
+    assert.match(error.message, /GitHub API redirect rejected/);
+    assert.doesNotMatch(error.message, /secret-not-for-logs/);
+    return true;
+  });
+  assert.equal(requestOptions.redirect, 'error', 'native fetch must not follow redirects');
+  assert.equal(requestOptions.method, undefined, 'request must remain read-only GET');
+});
