@@ -56,9 +56,14 @@ try {
     ];
     if (audit.largestGap) {
       rows.push('- Mayor hueco: ' + audit.largestGap.older + ' → ' + audit.largestGap.newer);
-      rows.push('- Ejecuciones: https://github.com/' + repo + '/actions/runs/' +
-        audit.largestGap.olderRunId + ' y https://github.com/' + repo + '/actions/runs/' +
-        audit.largestGap.newerRunId);
+    }
+    if (audit.gapDetails?.length) {
+      rows.push('', '### Todos los intervalos >15 minutos', '');
+      for (const gap of audit.gapDetails) {
+        rows.push('- ' + gap.older + ' → ' + gap.newer + ' (' + gap.minutes + ' min): ' +
+          '[anterior](https://github.com/' + repo + '/actions/runs/' + gap.olderRunId + ') · ' +
+          '[posterior](https://github.com/' + repo + '/actions/runs/' + gap.newerRunId + ')');
+      }
     }
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, rows.join('\n') + '\n');
   }
