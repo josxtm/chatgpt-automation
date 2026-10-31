@@ -2,6 +2,17 @@ import { validateScheduleHistoryPage } from './schedule-audit.js';
 
 export const inspectionStep = 'Inspect configured repositories (read-only)';
 
+// Reject ambiguous or impossible dates before they can authorize duplicate suppression.
+// GitHub Actions run/step timestamps are UTC ISO 8601 instants.
+function parseUtcTimestamp(value) {
+  if (typeof value !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value)) return NaN;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) &&
+    new Date(parsed).toISOString().slice(0, 19) === value.slice(0, 19) ? parsed : NaN;
+}
+
+
 // Called only inside the shared Actions concurrency group. Completed inspection
 // steps are receipts; skipped gates, failed runs and CI never refresh the receipt.
 export async function shouldInspect(get, { repo, runId, now = Date.now(), intervalMs = 600000 }) {
@@ -21,7 +32,7 @@ export async function shouldInspect(get, { repo, runId, now = Date.now(), interv
       total = state.totalCount;
       seen += data.workflow_runs.length;
       for (const run of data.workflow_runs) {
-        const timestamp = Date.parse(run?.created_at);
+        const timestamp = parseUtcTimestamp(run?.created_at);
         if (!Number.isSafeInteger(run?.id) || run.id <= 0 || ids.has(run.id) || !Number.isFinite(timestamp) || timestamp > now || timestamp > previous || run.head_branch !== 'main') throw new Error('Invalid recovery history');
         ids.add(run.id);
         previous = timestamp;
@@ -35,8 +46,8 @@ export async function shouldInspect(get, { repo, runId, now = Date.now(), interv
           if (!Array.isArray(job.steps)) throw new Error('Missing recovery steps');
           for (const step of job.steps) {
             if (step.name !== inspectionStep || step.conclusion !== 'success') continue;
-            const finished = Date.parse(step.completed_at);
-            if (!Number.isFinite(finished) || finished > now) throw new Error('Invalid inspection receipt');
+            const finished = parseUtcTimestamp(step.completed_at);
+            if (!Number.isFinite(finished) || finished < timestamp || finished > now) throw new Error('Invalid inspection receipt');
             if (finished > cutoff) return false;
           }
         }

@@ -1,3 +1,15 @@
+// GitHub run timestamps must be unambiguous, canonical UTC instants.
+// Date.parse alone normalizes impossible dates (e.g. February 30) and accepts
+// local-time strings, which could produce fictitious cadence evidence.
+function parseRunTimestamp(value) {
+  if (typeof value !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value)) return NaN;
+  const parsed = Date.parse(value);
+  if (!Number.isFinite(parsed) ||
+      new Date(parsed).toISOString().slice(0, 19) !== value.slice(0, 19)) return NaN;
+  return parsed;
+}
+
 // Advisory only: one recent scheduled run is not proof of ten-minute reliability.
 export function assessScheduleHistory(data, now = Date.now(), maxAgeMinutes = 45) {
   if (!Number.isFinite(now) || !Number.isFinite(maxAgeMinutes) || maxAgeMinutes <= 0) {
@@ -14,7 +26,7 @@ export function assessScheduleHistory(data, now = Date.now(), maxAgeMinutes = 45
     return { state: 'unknown', reason: 'Inconsistent scheduled-run history' };
   }
   const run = data.workflow_runs[0];
-  const timestamp = Date.parse(run?.created_at);
+  const timestamp = parseRunTimestamp(run?.created_at);
   if (run?.event !== 'schedule' || !Number.isSafeInteger(run?.id) || run.id <= 0 ||
       !Number.isFinite(timestamp) || timestamp > now) {
     return { state: 'unknown', reason: 'Invalid scheduled-run metadata' };
@@ -81,7 +93,7 @@ export function assessScheduleCadence(data, now = Date.now(), maxGapMinutes = 15
   let maxGap = 0;
   let largestGap = null;
   for (const run of runs) {
-    const timestamp = Date.parse(run?.created_at);
+    const timestamp = parseRunTimestamp(run?.created_at);
     if (run?.event !== 'schedule' || !Number.isSafeInteger(run?.id) || run.id <= 0 ||
         ids.has(run.id) || !Number.isFinite(timestamp) || timestamp > now ||
         (previous !== null && timestamp >= previous)) {
@@ -105,7 +117,7 @@ export function assessScheduleCadence(data, now = Date.now(), maxGapMinutes = 15
     previousRunId = run.id;
   }
   const sampleWindow = {
-    newest: new Date(Date.parse(runs[0].created_at)).toISOString(),
+    newest: new Date(parseRunTimestamp(runs[0].created_at)).toISOString(),
     oldest: new Date(previous).toISOString()
   };
   // Even two real starts can expose a large gap. Keep the sample insufficient
@@ -135,9 +147,9 @@ export function assessScheduleCadence(data, now = Date.now(), maxGapMinutes = 15
  * A different SHA is evidence of an older revision, NOT proof that the
  * current cron is disabled or broken (a new commit may have just landed).
  */
-export function assessScheduleRevision(data, currentSha) {
+export function assessScheduleRevision(data, currentSha, now = Date.now()) {
   const validSha = sha => typeof sha === 'string' && /^[a-f0-9]{40}$/i.test(sha);
-  if (!validSha(currentSha)) return { state: 'unknown', reason: 'Current commit SHA unavailable' };
+  if (!validSha(currentSha) || !Number.isFinite(now)) return { state: 'unknown', reason: 'Current commit SHA or clock unavailable' };
   if (!data || !Number.isSafeInteger(data.total_count) || data.total_count < 0 ||
       !Array.isArray(data.workflow_runs)) {
     return { state: 'unknown', reason: 'Malformed scheduled-run history' };
@@ -150,7 +162,8 @@ export function assessScheduleRevision(data, currentSha) {
   }
   const latest = data.workflow_runs[0];
   if (latest?.event !== 'schedule' || !Number.isSafeInteger(latest.id) || latest.id <= 0 ||
-      !Number.isFinite(Date.parse(latest.created_at)) || !validSha(latest.head_sha)) {
+      !Number.isFinite(parseRunTimestamp(latest.created_at)) ||
+      parseRunTimestamp(latest.created_at) > now || !validSha(latest.head_sha)) {
     return { state: 'unknown', reason: 'Invalid scheduled-run revision metadata' };
   }
   return {
