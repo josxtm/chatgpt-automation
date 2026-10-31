@@ -26,6 +26,16 @@ test('fails closed on truncated or malformed check results', async () => {
   await assert.rejects(fetchPages(async()=>({check_runs:[]}),'/checks','check_runs'),/total_count/);
   await assert.rejects(fetchPages(async()=>({total_count:1000,check_runs:Array(100).fill({})}),'/checks','check_runs',1),/limit/);
 });
+test('fails closed when check-run totals change between pages', async () => {
+  const get = async path => /[?&]page=1(?:&|$)/.test(path)
+    ? { total_count: 101, check_runs: Array.from({ length: 100 }, (_, i) => ({ name: 'other' + i })) }
+    : { total_count: 102, check_runs: [
+        { name: 'test', status: 'completed', conclusion: 'success' },
+        { name: 'extra', status: 'completed', conclusion: 'success' }
+      ] };
+  await assert.rejects(fetchPages(get, '/checks', 'check_runs'), /Inconsistent total_count/);
+});
+
 test('inspects PR with exact expected check', async () => {
   const entry={full_name:'owner/repo',enabled:true,required_checks:['test']};
   const get=async path=>path.includes('/pulls?')?[{number:7,head:{sha:'a'.repeat(40)},draft:false}]:{total_count:1,check_runs:[{name:'test',status:'completed',conclusion:'success'}]};
