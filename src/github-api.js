@@ -12,6 +12,9 @@ export function createGithubGet(token, { fetchImpl = globalThis.fetch, timeoutMs
     try {
       const res = await fetchImpl('https://api.github.com' + path, {
         signal: AbortSignal.timeout(timeoutMs),
+        // Never follow redirects with an authenticated request: a renamed or
+        // unexpected endpoint must not silently change the inspected resource.
+        redirect: 'error',
         headers: {
           Authorization: 'Bearer ' + token,
           Accept: 'application/vnd.github+json',
@@ -19,6 +22,7 @@ export function createGithubGet(token, { fetchImpl = globalThis.fetch, timeoutMs
           'User-Agent': 'chatgpt-automation'
         }
       });
+      if (res.redirected) throw new Error('GitHub API redirect rejected at ' + path);
       if (!res.ok) throw new Error('GitHub API ' + res.status + ' at ' + path);
       return await res.json();
     } catch (error) {
