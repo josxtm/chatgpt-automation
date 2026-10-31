@@ -31,3 +31,19 @@ test('exactly 15 minutes is not reported as a gap', () => {
   assert.equal(result.gaps, 0);
   assert.deepEqual(result.gapDetails, []);
 });
+
+
+test('audit exposes real first and last run links without inventing schedule events', () => {
+  const result = auditScheduleWindow([
+    run(4, '2026-10-29T23:55:00Z'),
+    run(3, '2026-10-29T23:30:00Z'),
+    run(2, '2026-10-29T23:15:00Z'),
+    run(1, '2026-10-28T23:50:00Z')
+  ], options);
+  assert.deepEqual(result.firstRun, { id: 2, createdAt: '2026-10-29T23:15:00.000Z' });
+  assert.deepEqual(result.lastRun, { id: 4, createdAt: '2026-10-29T23:55:00.000Z' });
+  const empty = auditScheduleWindow([], options);
+  assert.equal(empty.firstRun, null);
+  assert.equal(empty.lastRun, null);
+  assert.equal(empty.state, 'insufficient-data');
+});
