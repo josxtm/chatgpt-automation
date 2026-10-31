@@ -55,6 +55,7 @@ Los nombres de `required_checks` deben coincidir exactamente con los nombres de 
 - Un check ausente, ambiguo o duplicado **nunca** se considera verde.
 - El cron de GitHub no garantiza ejecución exacta cada diez minutos.
 - No se realizan fusiones automáticas.
+- Si la configuración no contiene ningún repositorio habilitado, el supervisor **falla** en lugar de terminar en verde sin inspeccionar nada; las entradas deshabilitadas se siguen permitiendo cuando queda al menos un repositorio activo.
 - Antes de permitir acciones de escritura: verificar protección de ramas, identidad de commits, permisos y límites de reintentos.
 
 ## Migración
