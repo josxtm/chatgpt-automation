@@ -65,6 +65,13 @@ La implementación antigua de Cloudflare Worker y D1 permanece en el historial y
 
 Ejecutar `npm test`. El workflow `Supervisor CI` realiza esta comprobación en GitHub.
 
+El CI también valida la sintaxis de **todos** los workflows `.github/workflows/*.yml`
+con `actionlint` v1.7.12, descargado desde su release oficial y verificado con
+SHA-256 fijo. Esto detecta YAML o expresiones de Actions inválidas antes de
+fusionar, incluso si las pruebas de Node pasan. La validación no requiere permisos
+de escritura ni activa Cloudflare; no sustituye la verificación de los disparos
+reales `schedule` después de la fusión.
+
 ## v0.7 — Diagnóstico del cron en el resumen (integrado en main)
 
 - Cada ejecución de **Multiproject Supervisor** consulta en modo lectura el último run cuyo evento sea \`schedule\` mediante la API de GitHub Actions.
