@@ -36,7 +36,7 @@ export async function shouldInspect(get, { repo, runId, now = Date.now(), interv
           for (const step of job.steps) {
             if (step.name !== inspectionStep || step.conclusion !== 'success') continue;
             const finished = Date.parse(step.completed_at);
-            if (!Number.isFinite(finished) || finished > now) throw new Error('Invalid inspection receipt');
+            if (!Number.isFinite(finished) || finished < timestamp || finished > now) throw new Error('Invalid inspection receipt');
             if (finished > cutoff) return false;
           }
         }
